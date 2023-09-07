@@ -69,9 +69,9 @@ int main(void){
          if( tmp_g[j][i] == min_j && tmp[j][i+1] == min_i ){   //隣り合っている画素値が一致しているか否か
             tokutyou_x = i;
             tokutyou_y = j;      //一致している場合には座標を保存
-         }else if(tmp[j][i+1] == min_i && tmp[j][i] == min_j){
+         }else if(tmp[j][i+1] == min_i && tmp[j][i] == min_j){ //今回は隣り合う画素を点対称にして同時生起行列を求めているため，逆も検証
             tokutyou_x = j;
-            tokutyou_y = i;      //今回は隣り合う画素を点対称にしているため，逆も検証
+            tokutyou_y = i;     
          }
       } 
    }
