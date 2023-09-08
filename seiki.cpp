@@ -27,53 +27,12 @@ int main(void){
     }
 
     int seiki[256][256];
-      for( j = 0; j < 256 ; j++){
-         for( i = 0; i < 256 ; i++){
-            seiki[j][i] = 0;
-         }
-      }
-   
     for( j = 0; j < TMP_SIZE_H; j++ ){
         for( i = 0; i < TMP_SIZE_W; i++ ){
             seiki[tmp_g[j][i]][tmp_g[j][i+1]]++;
             seiki[tmp_g[j][i+1]][tmp_g[j][i]]++;
         }
     }
+    
 
-   //宇佐美
-   int min;          //同時生起行列の発生確率が最も低い値となる変数
-   int min_j;       //minのj軸方向の画素値
-   int min_i;      //minのi軸方向の画素値
-   
-   min = seiki[0][0];
-   min_j = 0;
-   min_i = 0;     //各値の初期化
-
-   //頻度値が最も小さい（０より大きい）画素の組を求めるプログラム
-   for( j = 0 ; j < 256 ; j++ ){
-      for( i = 0 ; i < 256 ; i++ ){
-         if( seiki[i][j] < min && seiki[i][j] > 0){   //現在保存している発生確率よりも小さい確率の場合，処理が行われる．
-            min = seiki[i][j];
-            min_j = j;
-            min_i = i;         //全ての値の更新
-         }
-      }
-   } 
-
-   //求められた画素の組(min_xとmin_yが隣り合っている点）を探すプログラム
-   int tokutyou_x = 0;
-   int tokutyou_y = 0;   //求めたい画素の座標，及び初期化
-   
-   for( j = 0 ; j < TMP_SIZE_H; j++ ){
-      for( i = 0; i < TMP_SIZE_W-1; i++ ){      //領域外探索を避けている
-         if( tmp_g[j][i] == min_j && tmp[j][i+1] == min_i ){   //隣り合っている画素値が一致しているか否か
-            tokutyou_x = i;
-            tokutyou_y = j;      //一致している場合には座標を保存
-         }else if(tmp[j][i+1] == min_i && tmp[j][i] == min_j){ //今回は隣り合う画素を点対称にして同時生起行列を求めているため，逆も検証
-            tokutyou_x = j;
-            tokutyou_y = i;     
-         }
-      } 
-   }
-   
 }
