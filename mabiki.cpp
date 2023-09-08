@@ -6,7 +6,7 @@ int reference_y[C_SIZE];    //絞った際のy座標の配列
 
 int count = 0;
 for( i = 0; i < C_SIZE-2; i+=2 ){
-    reference_x[count] = [i]compoint_x;
-    reference_y[count] = [i]compoint_y;
+    reference_x[count] = compoint[i].q;
+    reference_y[count] = compoint[i].p;
     count += 1;
 } 
