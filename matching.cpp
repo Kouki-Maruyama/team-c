@@ -4,8 +4,7 @@
 Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp[CHANNEL][TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
-    int i, j, I, J, k;                                                  // カウンター
-    int R_SIZE;                                                         // カウンター
+    int i, j;                                                           // カウンター
     unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W];                  // グレースケール変換用
     unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W];                       // グレースケール変換用
     Point out_point;                                                    // 検出位置
@@ -27,79 +26,76 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         /* 担当：石川 */
         /* 同時生成行列の作成 */
 
-        com = {0};
+        // 初期化
 
         // 同時生成行列の作成
         for( j = 0; j < TMP_SIZE_H; j++ ){
-            for( i = 0; i < TMP_SIZE_W; i++ ){
-                com[tmp_g[j][i]][tmp_g[j][i+1]]++;
-                com[tmp_g[j][i+1]][tmp_g[j][i]]++;
+            for( i = 0; i < TMP_SIZE_W - 1; i++ ){
+                com[temp_g[j][i]][temp_g[j][i + 1]]++;
+                com[temp_g[j][i + 1]][temp_g[j][i]]++;
             }
         }
 
         /* 担当：宇佐美 */
         /* 発生頻度の低い画素の座標を探索，保存 */
 
-        int C_SIZE = 100;
-        COM_POINT com_point[C_SIZE];
+        int CP_SIZE = 100;
+        COM_POINT com_point[CP_SIZE];
 
-        // 頻度値1の画素の組を求めるプログラム
-        for( k = 0 ; k < C_SIZE; k++ ){
-            for( j = 0 ; j < 256; j++ ){
-                for( i = 0 ; i < 256 ; i++ ){
-                    if( seiki[j][i] == 1 ){   // 頻度値が１の場合にプログラムが始まる
-                        com_point[k].p = i;
-                        com_point[k].q = j;
-                    }
+        // 頻度値1の画素画素対を求めるプログラム
+        int c = 0;
+        for( j = 0 ; j < COM_SIZE; j++ ){
+            for( i = 0 ; i < COM_SIZE; i++ ){
+
+                if( c >= CP_SIZE )
+                    break;
+
+                if( com[j][i] == 1 ){   // 頻度値１の場合の画素対を保存
+                    com_point[c].p = i;
+                    com_point[c].q = j;
+                    c++;
                 }
-            } 
+            }
         }
 
         // 求められた画素の組を探すプログラム
-        for( k = 0; k < C_SIZE; k++ ){
-            for( j = 0; j < TMP_SIZE_H; j++ ){
-                for( i = 0; i < TMP_SIZE_W-1; i++ ){      // 領域外探索を避けている
+        c = 0;
+        for( j = 0; j < TMP_SIZE_H; j++ ){
+            for( i = 0; i < TMP_SIZE_W - 1; i++ ){      // 領域外探索を避けている
+                
+                if( c >= REFERENCE_SIZE )
+                    break;
 
-                    if( tmp_g[j][i] == COM_POINT[k].p && tmp[j][i+1] == COM_POINT[k].q ){   // 隣り合っている画素値が一致しているか否か
-                        reference_x[k] = i;
-                        reference_y[k] = j;
-
-                    // 一致している場合には座標を保存
-                    }else if(tmp[j][i+1] == COM_POINT[k].q && tmp[j][i] == COM_POINT[k].p){ // 今回は隣り合う画素を点対称にして同時生起行列を求めているため，逆も検証
-                        reference_x = j;
-                        reference_y = i;  
-                    }
-                } 
+                if( temp_g[j][i] == com_point[c].p && temp_g[j][i + 1] == com_point[c].q ){   // 隣り合っている画素値が一致しているか否か
+                    reference_x[c] = i;
+                    reference_y[c] = j;
+                    c++;
+                }
             }
         }
+
     }
     global_count++;
 
-    // SSDAによる探索
-    out_point = SSDA(input_g, temp_g);                                    
+    // SSDAによる探索                              
     out_point = SSDA_R(input_g, temp_g);                 // 参照画素を用いたSSDA
-
 
     return out_point;
 }
 
-Point SSDA(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
+Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
 
     int TMAP_SIZE_H, TMAP_SIZE_W;               // 相違度マップのサイズ
     TMAP_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
     TMAP_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
 
     int TMAP[TMAP_SIZE_H][TMAP_SIZE_W];         // 相違度マップ
-    int i, j, J, I;                             // カウンター
+    int i, j, J, I, c;                          // カウンター
     int Smin, thr, flag;                        // カウンター
     Point min;                                  // 相違度マップの最小値を保存
     
     // 相違度マップの初期化
-    for(j = 0; j < TMAP_SIZE_H; j++){
-        for(i = 0; i < TMAP_SIZE_W; i++){
-            TMAP[j][i] = 0;
-        }
-    }
+    TMAP[j][i] = {0};
 
     // 相違度マップの生成
     for(j = 0; j < TMAP_SIZE_H; j++){
@@ -107,23 +103,27 @@ Point SSDA(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp
 
             flag = 0;
 
-            for(J = 0; J < TMP_SIZE_H; J++){
-                for(I = 0; I < TMP_SIZE_W; I++){
+            // 画素選択型マッチング
+            for(c = 0; c < REFERENCE_SIZE; c++){
 
-                    TMAP[j][i] += ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) )
-                                * ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
+                I = reference_x[c];
+                J = reference_y[c];
 
-                    if( thr < TMAP[j][i] ){
-                        flag = 1;
-                        break;
-                    }
+                TMAP[j][i] += ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) )
+                            * ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
+
+                if( thr < TMAP[j][i] ){
+                    flag = 1;
+                    break;
                 }
             }
 
-            if( j == 0 && i == 0 )
+            if( j == 0 && i == 0 ){
                 thr = TMAP[j][i];
-            else if( flag == 0 )
+            }
+            else if( flag == 0 ){
                 thr = TMAP[j][i];
+            }
         }
     }
 
@@ -142,12 +142,6 @@ Point SSDA(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp
         }
     }
     
-    return min
-}
-
-
-Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W], Point refernse_point[R_SIZE]){
-
-
+    return min;
 }
 // ============================↑↑↑編集可能↑↑↑========================== //
