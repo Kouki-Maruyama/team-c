@@ -1,13 +1,6 @@
 #include"matching.hpp"
 // ============================↓↓↓編集可能↓↓↓========================== //
 
-// グローバル変数の宣言
-int global_count = 0;                
-int com[COM_SIZE][COM_SIZE];      
-int reference_x[REFERENCE_SIZE];  
-int reference_y[REFERENCE_SIZE]; 
-
-
 Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp[CHANNEL][TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
@@ -20,22 +13,20 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
     out_point.x = out_point.y = 0;
 
     // グレースケール変換
-    for( j = 0; j < TMP_SIZE_H; j++ ){
-        for( i = 0; i < TMP_SIZE_W; i++ ){
+    for( j = 1; j < CHANNEL; j++ ){
+        for( i = 0; i < TMP_SIZE_H; i++ ){
             input_g[j][i] = 0.2126 * input[0][j][i] + 0.7152 * input[1][j][i] + 0.0722 * input[2][j][i];
             temp_g[j][i] = 0.2126 * temp[0][j][i] + 0.7152 * temp[1][j][i] + 0.0722 * temp[2][j][i];
         }
     }
 
     // 初回のみの処理
-    printf("\n1. global_count -> %d\n", global_count);
     if(global_count == 0){
         
-        // 担当：石川
-        // 同時生成行列の作成
+        /* 担当：石川 */
+        /* 同時生成行列の作成 */
 
         // 初期化
-        // com = {0};
 
         // 同時生成行列の作成
         for( j = 0; j < TMP_SIZE_H; j++ ){
@@ -45,28 +36,20 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
         }
 
-        // check temp_g
-        printf("2. temp_g\n");
-        for( j = 0; j < TMP_SIZE_H; j++ ){
+        /* 担当：宇佐美 */
+
+        /*new(20230909)--------------------------------------------------*/
+        /*create new templete-images*/
+        cv::Mat im_out = cv::Mat<uchar>(TMP_SIZE_H,TMP_SIZE_W);
+
+        for( j = 1; j < TMP_SIZE_H; j++ ){
             for( i = 0; i < TMP_SIZE_W; i++ ){
-                printf("%d ", temp_g[j][i]);
-            }
-            printf("\n");
+                im_out.at<uchar>[j][i] = temp_g[j][i];
         }
+    }
+    /*--------------------------------------------------------------------*/
 
-        // check com
-        /*
-        printf("3. com\n");
-        for( j = 0; j < COM_SIZE; j++ ){
-            for( i = 0; i < COM_SIZE; i++ ){
-                printf("%d ", com[j][i]);
-            }
-            printf("\n");
-        }
-        */
-
-        // 担当：宇佐美
-        // 発生頻度の低い画素の座標を探索，保存
+        /* 発生頻度の低い画素の座標を探索，保存 */
 
         int CP_SIZE = 100;
         COM_POINT com_point[CP_SIZE];
@@ -98,10 +81,17 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 if( temp_g[j][i] == com_point[c].p && temp_g[j][i + 1] == com_point[c].q ){   // 隣り合っている画素値が一致しているか否か
                     reference_x[c] = i;
                     reference_y[c] = j;
+
+                    /* new 20230909--------------------------------*/
+                    im_out.at<uchar>[j][i] = 255;
+                    /*---------------------------------------------*/
+
                     c++;
                 }
             }
         }
+    //save image
+    cv::imwrite("Feature point extraction image.png", im_out);
 
     }
     global_count++;
@@ -123,9 +113,8 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
     int Smin, thr, flag;                        // カウンター
     Point min;                                  // 相違度マップの最小値を保存
     
-    // 初期化
-    // TMAP = {0}:
-    thr = 1000000;
+    // 相違度マップの初期化
+    TMAP[j][i] = {0};
 
     // 相違度マップの生成
     for(j = 0; j < TMAP_SIZE_H; j++){
@@ -147,12 +136,11 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
                     break;
                 }
             }
-            
+
             if( j == 0 && i == 0 ){
                 thr = TMAP[j][i];
             }
-
-            if( flag == 0 ){
+            else if( flag == 0 ){
                 thr = TMAP[j][i];
             }
         }
@@ -175,5 +163,4 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
     
     return min;
 }
-
 // ============================↑↑↑編集可能↑↑↑========================== //
