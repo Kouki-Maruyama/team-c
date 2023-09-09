@@ -39,12 +39,14 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         /* 担当：宇佐美 */
 
         /*new(20230909)--------------------------------------------------*/
+        /*同時生起行列で求めた座標をプロットする画像の生成
         /*create new templete-images*/
-        cv::Mat im_out = cv::Mat<uchar>(TMP_SIZE_H,TMP_SIZE_W);
+        
+        cv::Mat im_out = cv::Mat<uchar>(TMP_SIZE_H,TMP_SIZE_W);　      //画像の生成
 
         for( j = 1; j < TMP_SIZE_H; j++ ){
             for( i = 0; i < TMP_SIZE_W; i++ ){
-                im_out.at<uchar>[j][i] = temp_g[j][i];
+                im_out.at<uchar>[j][i] = temp_g[j][i];                //さきにGSのテンプレートと同じものにする
         }
     }
     /*--------------------------------------------------------------------*/
@@ -83,7 +85,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                     reference_y[c] = j;
 
                     /* new 20230909--------------------------------*/
-                    im_out.at<uchar>[j][i] = 255;
+                    im_out.at<uchar>[j][i] = 255;       //ここで求められた画素ペアの始点を255の白画素に変換
                     /*---------------------------------------------*/
 
                     c++;
@@ -91,7 +93,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
         }
     //save image
-    cv::imwrite("Feature point extraction image.png", im_out);
+    cv::imwrite("Feature point extraction image.png", im_out);　//同時生起行列の全てのプログラムが終了した際に画像を出力
 
     }
     global_count++;
