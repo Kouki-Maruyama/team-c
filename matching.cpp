@@ -37,6 +37,18 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         }
 
         /* 担当：宇佐美 */
+
+        /*new(20230909)--------------------------------------------------*/
+        /*create new templete-images*/
+        cv::Mat im_out = cv::Mat<uchar>(TMP_SIZE_H,TMP_SIZE_W);
+
+        for( j = 1; j < TMP_SIZE_H; j++ ){
+            for( i = 0; i < TMP_SIZE_W; i++ ){
+                im_out.at<uchar>[j][i] = temp_g[j][i];
+        }
+    }
+    /*--------------------------------------------------------------------*/
+
         /* 発生頻度の低い画素の座標を探索，保存 */
 
         int CP_SIZE = 100;
@@ -69,10 +81,17 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 if( temp_g[j][i] == com_point[c].p && temp_g[j][i + 1] == com_point[c].q ){   // 隣り合っている画素値が一致しているか否か
                     reference_x[c] = i;
                     reference_y[c] = j;
+
+                    /* new 20230909--------------------------------*/
+                    im_out.at<uchar>[j][i] = 255;
+                    /*---------------------------------------------*/
+
                     c++;
                 }
             }
         }
+    //save image
+    cv::imwrite("Feature point extraction image.png", im_out);
 
     }
     global_count++;
