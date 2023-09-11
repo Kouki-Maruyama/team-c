@@ -29,7 +29,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
     }
 
     // 初回のみの処理
-    printf("\nglobal_count -> %d\n", global_count);
+    // printf("\nglobal_count -> %d\n", global_count);
     if(global_count == 0){
 
         // パターン判別
@@ -186,7 +186,7 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
 
     // 変数の宣言
     int i, j, I, J, c;                                     // カウンター
-    // int thr, flag;
+    int thr, flag;
 
     int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
     loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
@@ -197,7 +197,7 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
     Point min;                                             // 検出位置
     
     // 初期化
-    // thr = 1000000;
+    thr = 1000000;
 
     // 相違度マップの生成
     for(j = 0; j < loss_SIZE_H; j++){
@@ -205,7 +205,7 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
 
             // 初期化
             loss[j][i] = 0;
-            // flag = 0;
+            flag = 0;
 
             // ラスタスキャン(選択画素のみ)
             for(c = 0; c < REFERENCE_SIZE; c++){
@@ -223,15 +223,18 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
                 loss[j][i] += ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) )
                             + ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
 
-                // if( thr < loss[j][i] ){
-                //     flag = 1;
-                //     break;
-                // }
+                if( thr < loss[j][i] ){
+                    flag = 1;
+                    break;
+                }
             }
-
-            // if( flag == 0 ){
-            //     thr = loss[j][i];
-            // }
+            
+            if( j == 0 && i == 0 ){
+                thr = loss[j][i];
+            }
+            if( flag == 0 ){
+                thr = loss[j][i];
+            }
         }
     }
 
