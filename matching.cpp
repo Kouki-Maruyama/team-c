@@ -70,18 +70,22 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
 
         /*
         printf("check com\n");
+        c = 0;
         for( j = 0; j < COM_SIZE; j++ ){
             for( i = 0; i < COM_SIZE; i++ ){
-                printf("%d ", com[j][i]);
+                if( com[j][i] == 1 )
+                    c++;
+                // printf("%d ", com[j][i]);       
             }
-            printf("\n");
+            // printf("\n");
         }
+        printf("sum of com 1 : %d\n", c);
         */
 
         // 担当：宇佐美
         // 発生頻度の低い画素の座標を探索，保存
 
-        int CP_SIZE = 3000;         // 選択ペア数
+        int CP_SIZE = 4314;         // 頻度値1のペア数
         COM_POINT com_point[CP_SIZE];
 
         // 同時世起行列から頻度値1のペアを探索
@@ -108,7 +112,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         */
         
         // 選択ペアの間引き処理
-        int interbal = CP_SIZE / REFERENCE_SIZE - 1;
+        int interbal = CP_SIZE / REFERENCE_SIZE;
         COM_POINT thin_point[REFERENCE_SIZE];
 
         for(i = 0; i < REFERENCE_SIZE; i++){
@@ -144,6 +148,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         }
         */
 
+        /*
         // 参照画素の座標を描画, 表示
         cv::Mat im_out(cv::Size(TMP_SIZE_W, TMP_SIZE_H), CV_8UC1);
 
@@ -163,79 +168,110 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }   
         }
         cv::imwrite("im_out.png", im_out);
+        */
 
     }
     global_count++;
 
     // SSDAによる探索                              
-    // out_point = SSDA_R(input_g, temp_g);                 // 参照画素を用いたSSDA
-    out_point = SAD_R(input_g, temp_g);                    // 参照画素を用いたSAD
+    out_point = SSDA_R(input_g, temp_g);                 // 画素選択型SSDA
+    // out_point = SAD_R(input_g, temp_g);                     // 画素選択型SAD
 
     return out_point;
 }
 
 Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
 
-    int TMAP_SIZE_H, TMAP_SIZE_W;               // 相違度マップのサイズ
-    TMAP_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
-    TMAP_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
+    // 変数の宣言
+    int i, j, I, J, c;                                     // カウンター
+    // int thr, flag;
 
-    int TMAP[TMAP_SIZE_H][TMAP_SIZE_W];         // 相違度マップ
-    int i, j, J, I, c;                          // カウンター
-    int Smin, thr, flag;                        // カウンター
-    Point min;                                  // 相違度マップの最小値を保存
+    int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
+    loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
+    loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
+
+    int loss[loss_SIZE_H][loss_SIZE_W];                    // 相違度マップ
+    int loss_min;                                          // 相違度マップの最小値
+    Point min;                                             // 検出位置
     
     // 初期化
-    thr = 1000000;
+    // thr = 1000000;
 
     // 相違度マップの生成
-    for(j = 0; j < TMAP_SIZE_H; j++){
-        for(i = 0; i < TMAP_SIZE_W; i++){
+    for(j = 0; j < loss_SIZE_H; j++){
+        for(i = 0; i < loss_SIZE_W; i++){
 
-            flag = 0;
+            // 初期化
+            loss[j][i] = 0;
+            // flag = 0;
 
-            // 画素選択型マッチング
+            // ラスタスキャン(選択画素のみ)
             for(c = 0; c < REFERENCE_SIZE; c++){
 
                 I = reference_x[c];
                 J = reference_y[c];
 
-                TMAP[j][i] += ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) )
-                            * ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
-
-                if( thr < TMAP[j][i] ){
-                    flag = 1;
-                    break;
+                // 一致している個数を記憶
+                if( input_g[J + j][I + i]  == temp_g[J][I]){
+                    loss[j][i]++;
                 }
-            }
-            
-            if( j == 0 && i == 0 ){
-                thr = TMAP[j][i];
+
+                // loss[j][i] += ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
+                            //* ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
+
+                // if( thr < loss[j][i] ){
+                //     flag = 1;
+                //     break;
+                // }
             }
 
-            if( flag == 0 ){
-                thr = TMAP[j][i];
-            }
+            // if( flag == 0 ){
+            //     thr = loss[j][i];
+            // }
         }
     }
 
-    Smin = TMAP[0][0];
-    min.x = min.y = 0;
+    printf("check loss\n");
+    for( j  = 0; j < loss_SIZE_H; j++ ){
+        for ( i = 0; i < loss_SIZE_W; i++ ){
+            printf("%d ", loss[j][i]);
+        }
+        printf("\n");
+        
+    }
 
-    // 相違度マップの最小値を算出
-    for(j = 0; j < TMAP_SIZE_H; j++){
-        for(i = 0; i < TMAP_SIZE_W; i++){
+    // 相違度の最小値を求める
+    // 初期化
+    min.x = 0; min.y = 0; 
+    loss_min = loss[0][0];
 
-            if( Smin > TMAP[j][i] ){
-                Smin = TMAP[j][i];
-                min.x = i;
-                min.y = j;
+    // ラスタスキャン
+    for( j = 0; j < loss_SIZE_H; j++ ){
+        for( i = 0; i < loss_SIZE_W; i++ ){
+
+            // SSD
+            /*
+            if(loss_min > loss[j][i]){
+
+                // 最小値の更新
+                loss_min = loss[j][i]; 
+                min.x = i; min.y = j;
+            }
+            */
+
+            // 一致した個数
+            if(loss_min < loss[j][i]){
+
+                // 最大値の更新
+                loss_min = loss[j][i]; 
+                min.x = i; min.y = j;
             }
         }
     }
     
     return min;
 }
+
 
 Point SAD_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
 
