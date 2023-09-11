@@ -22,8 +22,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
     out_point.x = out_point.y = 0;
 
     // グレースケール変換(入力画像)
-    for( j = 0; j < TMP_SIZE_H; j++ ){
-        for( i = 0; i < TMP_SIZE_W; i++ ){      
+    for( j = 0; j < INPUT_SIZE_H; j++ ){
+        for( i = 0; i < INPUT_SIZE_W; i++ ){      
             input_g[j][i] = 0.2126 * input[0][j][i] + 0.7152 * input[1][j][i] + 0.0722 * input[2][j][i];
         }
     }
@@ -120,10 +120,12 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             thin_point[i].q = com_point[i + (interbal * i)].q;
         } 
 
+        /*
         printf("check thin_point\n");
         for( i = 0; i < REFERENCE_SIZE; i++ ){
             printf("(%d, %d)\n", thin_point[i].p, thin_point[i].q);
         }
+        */
 
         // 選択ペアのテンプレートにおける座標を探索
         for( c = 0; c < REFERENCE_SIZE; c++ ){
@@ -135,7 +137,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         reference_x[c] = i;
                         reference_y[c] = j;
                         
-                        printf("reference_point[%d] -> (%d, %d)\n", c, reference_x[c], reference_y[c]);
+                        // printf("reference_point[%d] -> (%d, %d)\n", c, reference_x[c], reference_y[c]);
                     }
                 }
             }
@@ -167,7 +169,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }   
         }
-        cv::imwrite("im_out.png", im_out);
+        cv::imwrite("img_temp.png", im_out);
         */
 
     }
@@ -211,13 +213,15 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
                 I = reference_x[c];
                 J = reference_y[c];
 
+                /*
                 // 一致している個数を記憶
                 if( input_g[J + j][I + i]  == temp_g[J][I]){
                     loss[j][i]++;
                 }
+                */
 
-                // loss[j][i] += ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
-                            //* ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
+                loss[j][i] += ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) )
+                            + ( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) );
 
                 // if( thr < loss[j][i] ){
                 //     flag = 1;
@@ -231,14 +235,15 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
         }
     }
 
+    /*
     printf("check loss\n");
-    for( j  = 0; j < loss_SIZE_H; j++ ){
+    for( j = 0; j < loss_SIZE_H; j++ ){
         for ( i = 0; i < loss_SIZE_W; i++ ){
             printf("%d ", loss[j][i]);
         }
         printf("\n");
-        
     }
+    */
 
     // 相違度の最小値を求める
     // 初期化
@@ -250,15 +255,14 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
         for( i = 0; i < loss_SIZE_W; i++ ){
 
             // SSD
-            /*
             if(loss_min > loss[j][i]){
 
                 // 最小値の更新
                 loss_min = loss[j][i]; 
                 min.x = i; min.y = j;
             }
-            */
-
+            
+            /*
             // 一致した個数
             if(loss_min < loss[j][i]){
 
@@ -266,6 +270,7 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
                 loss_min = loss[j][i]; 
                 min.x = i; min.y = j;
             }
+            */
         }
     }
     
