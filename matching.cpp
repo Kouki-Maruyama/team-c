@@ -19,19 +19,20 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
     // グレースケール変換(入力画像)
     for( j = 0; j < INPUT_SIZE_H; j++ ){
         for( i = 0; i < INPUT_SIZE_W; i++ ){      
-            input_g[j][i] = 0.2126 * input[0][j][i] + 0.7152 * input[1][j][i] + 0.0722 * input[2][j][i];
+            input_g[j][i] = (int)(0.2126 * input[0][j][i] + 0.7152 * input[1][j][i] + 0.0722 * input[2][j][i]);
         }
     }
 
     // 初回のみの処理
-    if(global_count == 0){
-
-        int cp_size;
+    if( global_count == 0 ){
 
         // パターン判別
+        int cp_size;
+
         if( TMP_SIZE_W == 150 ){
             pattern = 1;
             reference_size = 3;
+            cp_size = 1000;
         }
         else if( TMP_SIZE_W == 160 ){
             pattern = 2;
@@ -40,41 +41,43 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         }
         else{
             pattern = 3;
-            reference_size = 22;
+            reference_size = 25;
             cp_size = 804;
         }
         printf("pattern -> %d\n", pattern);
 
-        // 入力画像における背景画素の決定
-        int histgram[256] = {0};
-        int max;
+        // 入力画像における背景画素の決定(パターン1・3のみ)
+        if( pattern == 1 || pattern == 3 ){
+            int histgram[256] = {0};
+            int max;
 
-        for( j = 0; j < INPUT_SIZE_H; j++ ){
-            for( i = 0; i < INPUT_SIZE_W; i++ ){
-                histgram[input_g[j][i]]++;
+            for( j = 0; j < INPUT_SIZE_H; j++ ){
+                for( i = 0; i < INPUT_SIZE_W; i++ ){
+                    histgram[input_g[j][i]]++;
+                }
+            }
+
+            max = histgram[0];
+            for( i = 0; i < 256; i++){
+                if( max < histgram[i] ){
+                    max = histgram[i];
+                    background_pixel = i;
+                }
             }
         }
-
-        max = histgram[0];
-        for( i = 1; i < 256; i++){
-            if( max < histgram[i] ){
-                max = histgram[i];
-                background_pixel = i;
-            }
-        }
-        
         printf("background_pixel -> %d\n", background_pixel);
 
         // グレースケール変換(テンプレート画像)
         for( j = 0; j < TMP_SIZE_H; j++ ){
             for( i = 0; i < TMP_SIZE_W; i++ ){
-                temp_g[j][i] = 0.2126 * temp[0][j][i] + 0.7152 * temp[1][j][i] + 0.0722 * temp[2][j][i];
+                temp_g[j][i] = (int)(0.2126 * temp[0][j][i] + 0.7152 * temp[1][j][i] + 0.0722 * temp[2][j][i]);
             }
         }
 
         // 担当：石川
         // 同時生成行列の作成
         int com_originai[2][COM_SIZE][COM_SIZE] = {0};
+        int sum = 0;
 
         for( j = 0; j < TMP_SIZE_H - 1; j++ ){
             for( i = 0; i < TMP_SIZE_W - 1; i++ ){
@@ -92,7 +95,6 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
         }
 
-        int sum = 0;
         for( j = 0; j < COM_SIZE; j++ ){
             for( i = 0; i < COM_SIZE; i++ ){
                 if( com_originai[0][j][i] == 1 && com_originai[1][j][i] == 1 ){
@@ -203,6 +205,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             printf("%d -> (%d, %d)\n", i, reference_x[i], reference_y[i]);
         }
 
+        /*
         // 参照画素の座標を描画, 表示
         cv::Mat im_out(cv::Size(TMP_SIZE_W, TMP_SIZE_H), CV_8UC3);
 
@@ -231,6 +234,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }   
         }
         cv::imwrite("img_tmp_3.png", im_out);
+        */
 
     }
     global_count++;
@@ -259,41 +263,114 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
     thr = 0;
 
     // 相違度マップの生成
-    for(j = 0; j < loss_SIZE_H; j++){
-        for(i = 0; i < loss_SIZE_W; i++){
+    if( pattern == 1 ){
+        for(j = 0; j < loss_SIZE_H; j++){
+            for(i = 0; i < loss_SIZE_W; i++){
 
-            // 初期化
-            flag = 0;
+                // 初期化
+                flag = 0;
 
-            // 背景画素のスキップ（パターン1・3のみ)
-            if( !(j == 0 && i == 0) && (pattern == 1 || pattern == 3) ){
-                if( input_g[j][i] == background_pixel || input_g[j][i + TMP_SIZE_W - 1] == background_pixel ||
-                    input_g[j + TMP_SIZE_H - 1][i] == background_pixel || input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel ){
+                // 背景画素スキップ（パターン1・3のみ)
+                if( !(j == 0 && i == 0) ){
+                    if( input_g[j][i] == background_pixel ||
+                        input_g[j][i + TMP_SIZE_W - 1] == background_pixel ||
+                        input_g[j + TMP_SIZE_H - 1][i] == background_pixel ||
+                        input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel ){
                         
-                    loss[j][i] = 10000;
-                    continue;
+                        loss[j][i] = 10000;
+                        continue;
+                    }
+                }
+
+                // ラスタスキャン(選択画素のみ)
+                for(c = 0; c < reference_size; c++){
+                    I = reference_x[c];
+                    J = reference_y[c];
+
+                    loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
+
+                    if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
+                        flag = 1;
+                        break;
+                    }
+                }
+
+                if( j == 0 && i == 0 ){
+                    thr = loss[j][i];
+                }
+                if( flag == 0 ){
+                    thr = loss[j][i];
                 }
             }
+        }
+    }
+    else if( pattern == 2 ){
+        for(j = 0; j < loss_SIZE_H; j++){
+            for(i = 0; i < loss_SIZE_W; i++){
 
-            // ラスタスキャン(選択画素のみ)
-            for(c = 0; c < reference_size; c++){
+                // 初期化
+                flag = 0;
 
-                I = reference_x[c];
-                J = reference_y[c];
+                // ラスタスキャン(選択画素のみ)
+                for(c = 0; c < reference_size; c++){
+                    I = reference_x[c];
+                    J = reference_y[c];
 
-                loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
+                    loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
 
-                if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
-                    flag = 1;
-                    break;
+                    if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
+                        flag = 1;
+                        break;
+                    }
+                }
+
+                if( j == 0 && i == 0 ){
+                    thr = loss[j][i];
+                }
+                if( flag == 0 ){
+                    thr = loss[j][i];
                 }
             }
-            
-            if( j == 0 && i == 0 ){
-                thr = loss[j][i];
-            }
-            if( flag == 0 ){
-                thr = loss[j][i];
+        }
+    }
+    else{
+        for(j = 0; j < loss_SIZE_H; j++){
+            for(i = 0; i < loss_SIZE_W; i++){
+
+                // 初期化
+                flag = 0;
+
+                // 背景画素スキップ（パターン1・3のみ)
+                if( !(j == 0 && i == 0) ){
+                    if( (input_g[j][i] == background_pixel && input_g[j][i + 1] == background_pixel) ||
+                        (input_g[j][i + TMP_SIZE_W - 1] == background_pixel && input_g[j][i + TMP_SIZE_W] == background_pixel) ||
+                        (input_g[j + TMP_SIZE_H - 1][i] == background_pixel && input_g[j + TMP_SIZE_H - 1][i + 1] == background_pixel) ||
+                        (input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel && input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W]) ){
+                        
+                        loss[j][i] = 10000;
+                        continue;
+                    }
+                }
+
+                // ラスタスキャン(選択画素のみ)
+                for(c = 0; c < reference_size; c++){
+                    I = reference_x[c];
+                    J = reference_y[c];
+
+                    loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
+
+                    if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
+                        flag = 1;
+                        break;
+                    }
+                }
+
+                if( j == 0 && i == 0 ){
+                    thr = loss[j][i];
+                }
+                if( flag == 0 ){
+                    thr = loss[j][i];
+                }
             }
         }
     }
@@ -326,6 +403,19 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
             }
         }
     }
+
+    /*
+    if( global_count == 5 ){
+        printf("check loss_value\n");
+
+        // printf("[0][0]  -> %d, [0][159]  -> %d\n", input_g[215][417], input_g[215][417 + TMP_SIZE_W - 1]);
+        // printf("[99][0] -> %d, [99][159] -> %d\n", input_g[215 + TMP_SIZE_H -1][417], input_g[215 + TMP_SIZE_H - 1][417 + TMP_SIZE_W - 1]);
+
+        printf("true : lose[215][417] -> %d\n", loss[215][417]);
+        printf("ans  : lose[%d][%d] -> %d\n", min.y, min.x, loss[min.y][min.x]);
+
+    }
+    */
     
     return min;
 }
