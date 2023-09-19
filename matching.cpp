@@ -8,7 +8,7 @@
 Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp[CHANNEL][TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
-    int i, j, c;                                                        // カウンター
+    int i, j, c, n;                                                     // カウンター
     unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W];                  // グレースケール変換用
     unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W];                       // グレースケール変換用
     Point out_point;                                                    // 検出位置
@@ -32,12 +32,12 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         if( TMP_SIZE_W == 150 ){
             pattern = 1;
             reference_size = 3;
-            cp_size = 1000;
+            cp_size = 48;
         }
-        else if( TMP_SIZE_W == 160 ){
+        else if( TMP_SIZE_W == 280 ){
             pattern = 2;
-            reference_size = 20;
-            cp_size = 3850;
+            reference_size = 12;
+            cp_size = 728;
         }
         else{
             pattern = 3;
@@ -46,7 +46,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         }
         printf("pattern -> %d\n", pattern);
 
-        // 入力画像における背景画素の決定(パターン1・3のみ)
+        // 入力画像における背景画素の決定(パターン1・3)
         if( pattern == 1 || pattern == 3 ){
             int histgram[256] = {0};
             int max;
@@ -65,7 +65,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }
         }
-        printf("background_pixel -> %d\n", background_pixel);
+        // printf("background_pixel -> %d\n", background_pixel);
 
         // グレースケール変換(テンプレート画像)
         for( j = 0; j < TMP_SIZE_H; j++ ){
@@ -77,7 +77,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         // 担当：石川
         // 同時生成行列の作成
         int com_originai[2][COM_SIZE][COM_SIZE] = {0};
-        int sum = 0;
+        // int sum = 0;
 
         for( j = 0; j < TMP_SIZE_H - 1; j++ ){
             for( i = 0; i < TMP_SIZE_W - 1; i++ ){
@@ -104,76 +104,37 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                     com[j][i] = 0;
                 }
 
+                /*
                 if( com[j][i] == 1 ){
                     sum++;
                 }
+                */
             }
         }
-        printf("sum of 1 -> %d\n", sum);
+        // printf("sum of 1 -> %d\n", sum);
        
         // 担当：宇佐美
         // 発生頻度の低い画素の座標を探索，保存
-        
-        COM_POINT com_point[cp_size];      // 頻度値1のペアを保存（座標）
-        cp_size = sum;
+        // cp_size = sum;
+        COM_POINT thin_point[reference_size];       // 頻度値1のペアを保存(座標)
+        int interbal = cp_size / reference_size;
+
         c = 0;
+        n = 0;
         for( j = 0 ; j < COM_SIZE; j++ ){
             for( i = 0 ; i < COM_SIZE; i++ ){
 
-                if( c >= cp_size )
-                    break;
-
-                if( com[j][i] == 1 ){   // 頻度値１の場合のペアを保存
-                    com_point[c].p = i;
-                    com_point[c].q = j;
+                if( com[j][i] == 1 ){       // 頻度値１のペア数を記録
                     c++;
                 }
-            }
-        }
-        
-        /*
-        printf("check com_point\n");
-        for( i = 0; i < cp_size; i++ ){
-            printf("%d -> (%d, %d)\n", i, com_point[i].p, com_point[i].q);
-        }
-        */
-        
-        // 選択ペアの間引き処理
-        COM_POINT thin_point[reference_size];
-        int interbal = cp_size / reference_size;
-
-        for(i = 0; i < reference_size; i++){
-            thin_point[i].p = com_point[i + (interbal * i)].p;
-            thin_point[i].q = com_point[i + (interbal * i)].q;
-        }
-
-        /*
-        // 選択ペアの間引き処理(パターン判別版)
-        if( pattern == 3 ){
-            int interbal1 = cp_size / 25;
-            int interbal2 = cp_size / 4;
-            // int interbal3 = cp_size / 17;
-
-            for(i = 0; i < reference_size; i++){
-                if( i < 25 ){
-                    thin_point[i].p = com_point[i + (interbal1 * i)].p;
-                    thin_point[i].q = com_point[i + (interbal1 * i)].q;
-                }
-                else{
-                    thin_point[i].p = com_point[i + (interbal2 * (i - 25))].p;
-                    thin_point[i].q = com_point[i + (interbal2 * (i - 25))].q;
+                
+                if( c == interbal * n){     // 選択ペアの間引き処理
+                    thin_point[n].p = i;
+                    thin_point[n].q = j;
+                    n++;
                 }
             }
         }
-        else{
-            int interbal = cp_size / reference_size;
-
-            for(i = 0; i < reference_size; i++){
-                thin_point[i].p = com_point[i + (interbal * i)].p;
-                thin_point[i].q = com_point[i + (interbal * i)].q;
-            }
-        }
-        */
 
         /*
         printf("check thin_point\n");
@@ -190,8 +151,6 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                     // 隣り合っている画素値が一致しているか否か(水平方向)
                     if( (temp_g[j][i] == thin_point[c].p && temp_g[j][i + 1] == thin_point[c].q) || 
                         (temp_g[j][i + 1] == thin_point[c].p && temp_g[j][i] == thin_point[c].q) ){
-                        //(temp_g[j][i] == thin_point[c].p && temp_g[j + 1][i] == thin_point[c].q) ||
-                        //(temp_g[j + 1][i] == thin_point[c].p && temp_g[j][i] == thin_point[c].q) ){ 
                         
                         reference_x[c] = i;
                         reference_y[c] = j;
@@ -199,11 +158,13 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }
         }
-       
+
+        /*
         printf("check reference_point\n");
         for( i = 0; i < reference_size; i++ ){
             printf("%d -> (%d, %d)\n", i, reference_x[i], reference_y[i]);
         }
+        */
 
         /*
         // 参照画素の座標を描画, 表示
@@ -233,7 +194,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }   
         }
-        cv::imwrite("img_tmp_3.png", im_out);
+        cv::imwrite("img_tmp_2.png", im_out);
         */
 
     }
@@ -269,8 +230,8 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
 
                 // 初期化
                 flag = 0;
-
-                // 背景画素スキップ（パターン1・3のみ)
+                
+                // 背景画素スキップ（パターン1・3)
                 if( !(j == 0 && i == 0) ){
                     if( input_g[j][i] == background_pixel ||
                         input_g[j][i + TMP_SIZE_W - 1] == background_pixel ||
@@ -340,7 +301,7 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
                 // 初期化
                 flag = 0;
 
-                // 背景画素スキップ（パターン1・3のみ)
+                // 背景画素スキップ(パターン1・3)
                 if( !(j == 0 && i == 0) ){
                     if( (input_g[j][i] == background_pixel && input_g[j][i + 1] == background_pixel) ||
                         (input_g[j][i + TMP_SIZE_W - 1] == background_pixel && input_g[j][i + TMP_SIZE_W] == background_pixel) ||
