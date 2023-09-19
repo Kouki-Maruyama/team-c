@@ -1,5 +1,8 @@
 // ライブラリのインクルード
 #include"integration.hpp"
+#include"staff_struct.hpp"
+#include"matching.hpp"
+#include"staff_utils.hpp"
 
 // メイン関数
 int main(void){
