@@ -43,8 +43,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             pattern = 3;
             reference_size = 25;
             cp_size = 804;
-        }
-        printf("pattern -> %d\n", pattern);
+        } 
 
         // 入力画像における背景画素の決定(パターン1・3)
         if( pattern == 1 || pattern == 3 ){
@@ -65,7 +64,6 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }
         }
-        // printf("background_pixel -> %d\n", background_pixel);
 
         // グレースケール変換(テンプレート画像)
         for( j = 0; j < TMP_SIZE_H; j++ ){
@@ -77,7 +75,6 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         // 担当：石川
         // 同時生成行列の作成
         int com_originai[2][COM_SIZE][COM_SIZE] = {0};
-        // int sum = 0;
 
         for( j = 0; j < TMP_SIZE_H - 1; j++ ){
             for( i = 0; i < TMP_SIZE_W - 1; i++ ){
@@ -86,12 +83,6 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 
                 com_originai[1][temp_g[j + 1][i]][temp_g[j][i]]++;          // 垂直方向のペアを追加
                 com_originai[1][temp_g[j][i]][temp_g[j + 1][i]]++;
-
-                // com_originai[2][temp_g[j + 1][i + 1]][temp_g[j][i]]++;      // 125度方向のペアを追加
-                // com_originai[2][temp_g[j][i]][temp_g[j + 1][i + 1]]++;
-
-                // com_originai[3][temp_g[j - 1][i + 1]][temp_g[j][i]]++;      // 45度方向のペアを追加
-                // com_originai[3][temp_g[j][i]][temp_g[j - 1][i + 1]]++;
             }
         }
 
@@ -103,19 +94,11 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 else{
                     com[j][i] = 0;
                 }
-
-                /*
-                if( com[j][i] == 1 ){
-                    sum++;
-                }
-                */
             }
         }
-        // printf("sum of 1 -> %d\n", sum);
        
         // 担当：宇佐美
         // 発生頻度の低い画素の座標を探索，保存
-        // cp_size = sum;
         COM_POINT thin_point[reference_size];       // 頻度値1のペアを保存(座標)
         int interbal = cp_size / reference_size;
 
@@ -136,13 +119,6 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
         }
 
-        /*
-        printf("check thin_point\n");
-        for( i = 0; i < reference_size; i++ ){
-            printf("%d -> (%d, %d)\n", i, thin_point[i].p, thin_point[i].q);
-        }
-        */
-
         // 選択ペアのテンプレートにおける座標を探索
         for( c = 0; c < reference_size; c++ ){
             for( j = 0; j < TMP_SIZE_H - 1; j++ ){
@@ -159,54 +135,125 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
         }
 
-        /*
-        printf("check reference_point\n");
-        for( i = 0; i < reference_size; i++ ){
-            printf("%d -> (%d, %d)\n", i, reference_x[i], reference_y[i]);
-        }
-        */
-
-        /*
-        // 参照画素の座標を描画, 表示
-        cv::Mat im_out(cv::Size(TMP_SIZE_W, TMP_SIZE_H), CV_8UC3);
-
-        for( j = 0; j < TMP_SIZE_H; j++ ){
-            for( i = 0; i < TMP_SIZE_W; i++ ){
-                //im_out.at<uchar>(j, i) = temp_g[j][i];
-
-                im_out.at<cv::Vec3b>(j, i)[0] = temp[0][j][i]; 
-                im_out.at<cv::Vec3b>(j, i)[1] = temp[1][j][i]; 
-                im_out.at<cv::Vec3b>(j, i)[2] = temp[2][j][i];
-            }
-        }
-        
-        for( c = 0; c < reference_size; c++ ){
-            for( j = 0; j < TMP_SIZE_H; j++ ){
-                for( i = 0; i < TMP_SIZE_W; i++ ){
-
-                    if( i == reference_x[c] && j == reference_y[c] ){
-                        // im_out.at<uchar>(j, i) = 0;
-
-                        im_out.at<cv::Vec3b>(j, i)[0] = 25; 
-                        im_out.at<cv::Vec3b>(j, i)[1] = 255; 
-                        im_out.at<cv::Vec3b>(j, i)[2] = 90; 
-                    }
-                }
-            }   
-        }
-        cv::imwrite("img_tmp_2.png", im_out);
-        */
-
     }
     global_count++;
 
-    // SSDAによる探索                              
-    out_point = SSDA_R(input_g, temp_g);                 // 画素選択型SSDA
+    // SSDAによる探索
+    if( pattern == 1 ){
+        out_point = RSSDA_1(input_g, temp_g);                 
+    }
+    else if( pattern == 2 ){
+        out_point = RSSDA_2(input_g, temp_g);                 
+    }
+    else{
+        out_point = RSSDA_3(input_g, temp_g);                
+    }
 
     return out_point;
 }
 
-Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
+Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
+
+    // 変数の宣言
+    int i, j, I, J, c;                                     // カウンター
+    int thr, flag;
+
+    int flag_found, flag_found_point;
+    Point found_point;
+
+    int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
+    loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
+    loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
+
+    int loss[loss_SIZE_H][loss_SIZE_W] = {1000};           // 相違度マップ
+    int loss_min;                                          // 相違度マップの最小値
+    Point min;                                             // 検出位置
+
+    // 初期化
+    thr = 1000;
+    flag_found = 0;
+    flag_found_point = 0;
+    found_point.x = found_point.y = 0;
+
+    // 相違度マップの生成
+    for(j = 0; j < loss_SIZE_H; j++){
+        for(i = 0; i < loss_SIZE_W; i++){
+
+            // 初期化
+            flag = 0;
+                
+            // スタート位置の探索
+            if( input_g[j][i] == background_pixel ){
+                continue;
+            }
+            else{
+                if( flag_found_point == 0 ){
+                    found_point.x = i;
+                    found_point.y = j;
+
+                    flag_found_point = 1;
+                }
+                flag_found = 1;
+            }
+
+            // ラスタスキャン(選択画素のみ)
+            for(c = 0; c < reference_size; c++){
+                I = reference_x[c];
+                J = reference_y[c];
+
+                loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
+
+                if( thr < loss[j][i] ){
+                    flag = 1;
+                    break;
+                }
+            }
+
+            if( flag == 0 ){
+                thr = loss[j][i];
+            }
+            if( flag_found == 1 ){
+                i += 196 - 1;
+            }
+        }
+        if( flag_found == 1 ){
+            j += 116 - 1;
+        }
+    }
+
+    /*
+    printf("check loss\n");
+    for( j = 0; j < loss_SIZE_H; j++ ){
+        for ( i = 0; i < loss_SIZE_W; i++ ){
+            printf("%d ", loss[j][i]);
+        }            
+        printf("\n");
+    }
+    */
+
+    // 相違度の最小値を求める
+    // 初期化
+    min.x = 0; min.y = 0; 
+    loss_min = loss[0][0];
+
+    // ラスタスキャン
+    for( j = found_point.y; j < loss_SIZE_H; j+=116 ){
+        for( i = found_point.x; i < loss_SIZE_W; i+=196 ){
+
+            // SSD
+            if(loss_min > loss[j][i]){
+
+                // 最小値の更新
+                loss_min = loss[j][i]; 
+                min.x = i; min.y = j;
+            }
+        }
+    }
+
+    return min;
+}
+
+Point RSSDA_2(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
     int i, j, I, J, c;                                     // カウンター
@@ -223,128 +270,35 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
     // 初期化
     thr = 0;
 
+
     // 相違度マップの生成
-    if( pattern == 1 ){
-        for(j = 0; j < loss_SIZE_H; j++){
-            for(i = 0; i < loss_SIZE_W; i++){
+    for(j = 0; j < loss_SIZE_H; j++){
+        for(i = 0; i < loss_SIZE_W; i++){
 
-                // 初期化
-                flag = 0;
-                
-                // 背景画素スキップ（パターン1・3)
-                if( !(j == 0 && i == 0) ){
-                    if( input_g[j][i] == background_pixel ||
-                        input_g[j][i + TMP_SIZE_W - 1] == background_pixel ||
-                        input_g[j + TMP_SIZE_H - 1][i] == background_pixel ||
-                        input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel ){
-                        
-                        loss[j][i] = 10000;
-                        continue;
-                    }
+            // 初期化
+            flag = 0;
+
+            // ラスタスキャン(選択画素のみ)
+            for(c = 0; c < reference_size; c++){
+                I = reference_x[c];
+                J = reference_y[c];
+
+                loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
+
+                if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
+                    flag = 1;
+                    break;
                 }
+            }
 
-                // ラスタスキャン(選択画素のみ)
-                for(c = 0; c < reference_size; c++){
-                    I = reference_x[c];
-                    J = reference_y[c];
-
-                    loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
-
-                    if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
-                        flag = 1;
-                        break;
-                    }
-                }
-
-                if( j == 0 && i == 0 ){
-                    thr = loss[j][i];
-                }
-                if( flag == 0 ){
-                    thr = loss[j][i];
-                }
+            if( j == 0 && i == 0 ){
+                thr = loss[j][i];
+            }
+            if( flag == 0 ){                   
+                thr = loss[j][i];
             }
         }
     }
-    else if( pattern == 2 ){
-        for(j = 0; j < loss_SIZE_H; j++){
-            for(i = 0; i < loss_SIZE_W; i++){
-
-                // 初期化
-                flag = 0;
-
-                // ラスタスキャン(選択画素のみ)
-                for(c = 0; c < reference_size; c++){
-                    I = reference_x[c];
-                    J = reference_y[c];
-
-                    loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
-
-                    if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
-                        flag = 1;
-                        break;
-                    }
-                }
-
-                if( j == 0 && i == 0 ){
-                    thr = loss[j][i];
-                }
-                if( flag == 0 ){
-                    thr = loss[j][i];
-                }
-            }
-        }
-    }
-    else{
-        for(j = 0; j < loss_SIZE_H; j++){
-            for(i = 0; i < loss_SIZE_W; i++){
-
-                // 初期化
-                flag = 0;
-
-                // 背景画素スキップ(パターン1・3)
-                if( !(j == 0 && i == 0) ){
-                    if( (input_g[j][i] == background_pixel && input_g[j][i + 1] == background_pixel) ||
-                        (input_g[j][i + TMP_SIZE_W - 1] == background_pixel && input_g[j][i + TMP_SIZE_W] == background_pixel) ||
-                        (input_g[j + TMP_SIZE_H - 1][i] == background_pixel && input_g[j + TMP_SIZE_H - 1][i + 1] == background_pixel) ||
-                        (input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel && input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W]) ){
-                        
-                        loss[j][i] = 10000;
-                        continue;
-                    }
-                }
-
-                // ラスタスキャン(選択画素のみ)
-                for(c = 0; c < reference_size; c++){
-                    I = reference_x[c];
-                    J = reference_y[c];
-
-                    loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
-
-                    if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
-                        flag = 1;
-                        break;
-                    }
-                }
-
-                if( j == 0 && i == 0 ){
-                    thr = loss[j][i];
-                }
-                if( flag == 0 ){
-                    thr = loss[j][i];
-                }
-            }
-        }
-    }
-
-    /*
-    printf("check loss\n");
-    for( j = 0; j < loss_SIZE_H; j++ ){
-        for ( i = 0; i < loss_SIZE_W; i++ ){
-            printf("%d ", loss[j][i]);
-        }
-        printf("\n");
-    }
-    */ 
 
     // 相違度の最小値を求める
     // 初期化
@@ -365,19 +319,86 @@ Point SSDA_R(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char te
         }
     }
 
-    /*
-    if( global_count == 5 ){
-        printf("check loss_value\n");
+    return min;
+}
 
-        // printf("[0][0]  -> %d, [0][159]  -> %d\n", input_g[215][417], input_g[215][417 + TMP_SIZE_W - 1]);
-        // printf("[99][0] -> %d, [99][159] -> %d\n", input_g[215 + TMP_SIZE_H -1][417], input_g[215 + TMP_SIZE_H - 1][417 + TMP_SIZE_W - 1]);
+Point RSSDA_3(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
 
-        printf("true : lose[215][417] -> %d\n", loss[215][417]);
-        printf("ans  : lose[%d][%d] -> %d\n", min.y, min.x, loss[min.y][min.x]);
+    // 変数の宣言
+    int i, j, I, J, c;                                     // カウンター
+    int thr, flag;
 
+    int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
+    loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
+    loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
+
+    int loss[loss_SIZE_H][loss_SIZE_W] = {0};              // 相違度マップ
+    int loss_min;                                          // 相違度マップの最小値
+    Point min;                                             // 検出位置
+
+    // 初期化
+    thr = 0;
+
+    // 相違度マップの生成
+    for(j = 0; j < loss_SIZE_H; j++){
+        for(i = 0; i < loss_SIZE_W; i++){
+
+            // 初期化
+            flag = 0;
+
+            // 背景画素スキップ
+            if( !(j == 0 && i == 0) ){
+                if( (input_g[j][i] == background_pixel && input_g[j][i + 1] == background_pixel) ||
+                    (input_g[j][i + TMP_SIZE_W - 1] == background_pixel && input_g[j][i + TMP_SIZE_W] == background_pixel) ||
+                    (input_g[j + TMP_SIZE_H - 1][i] == background_pixel && input_g[j + TMP_SIZE_H - 1][i + 1] == background_pixel) ||
+                    (input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel && input_g[j + TMP_SIZE_H - 1][i + TMP_SIZE_W]) ){
+                    
+                    loss[j][i] = 10000;
+                    continue;
+                }
+            }
+
+            // ラスタスキャン(選択画素のみ)
+            for(c = 0; c < reference_size; c++){
+                I = reference_x[c];
+                J = reference_y[c];
+
+                loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
+
+                if( !(j == 0 && i == 0) && (thr < loss[j][i]) ){
+                    flag = 1;
+                    break;
+                }
+            }
+
+            if( j == 0 && i == 0 ){
+                thr = loss[j][i];
+            }
+            if( flag == 0 ){
+                thr = loss[j][i];
+            }
+        }
     }
-    */
-    
+
+    // 相違度の最小値を求める
+    // 初期化
+    min.x = 0; min.y = 0; 
+    loss_min = loss[0][0];
+
+    // ラスタスキャン
+    for( j = 0; j < loss_SIZE_H; j++ ){
+        for( i = 0; i < loss_SIZE_W; i++ ){
+
+            // SSD
+            if(loss_min > loss[j][i]){
+
+                // 最小値の更新
+                loss_min = loss[j][i]; 
+                min.x = i; min.y = j;
+            }
+        }
+    }
+
     return min;
 }
 // ============================↑↑↑編集可能↑↑↑========================== //
