@@ -155,30 +155,22 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
 Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp_g[TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
-    int i, j, I, J, c;                                     // カウンター
-    int thr, flag;
-
-    int flag_found, flag_point;
-    Point found_point;
+    int i, j, I, J, c, k;                                  // カウンター
+    int thr, flag, flag_found;
 
     int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
     loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
     loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
 
-    int loss[loss_SIZE_H][loss_SIZE_W] = {0};              // 相違度マップ
+    int loss[12] = {0};
+    Point found_point[12];
+   
     int loss_min;                                          // 相違度マップの最小値
     Point min;                                             // 検出位置
 
     // 初期化
-    thr = 0;
-    flag_point = 0;
-    found_point.x = found_point.y = 0;
-
-    for(j = 0; j < loss_SIZE_H; j++ ){
-        for(i = 0; i < loss_SIZE_W; i++ ){
-            loss[j][i] = 1;
-        }
-    }
+    thr = 1000;
+    k = 0;
 
     // 相違度マップの生成
     for(j = 0; j < loss_SIZE_H; j++){
@@ -190,21 +182,14 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
             flag = 0;
                 
             // スタート位置の探索
-            if( !(j == 0 && i == 0) ){
-                if( input_g[j][i] == background_pixel ){
-                    continue;
-                }
-                else{
-                    loss[j][i] = 0;
-                    flag_found = 1;
-                }
+            if( input_g[j][i] == background_pixel ){
+                continue;
+            }
+            else{
+                found_point[k].x = i;
+                found_point[k].y = j;
 
-                if( flag_point == 0 ){
-                    found_point.x = i;
-                    found_point.y = j;
-
-                    flag_point = 1;
-                }
+                flag_found = 1;
             }
 
             // ラスタスキャン(選択画素のみ)
@@ -212,58 +197,45 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
                 I = reference_x[c];
                 J = reference_y[c];
 
-                loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
+                loss[k] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
 
-                if( !(j == 0 && i == 0) && thr < loss[j][i] ){
+                if( thr < loss[k] ){
                     flag = 1;
                     break;
                 }
             }
-            printf("%d, (%d, %d) -> %d\n", flag, j, i, loss[j][i]);
-            // ログファイル確認コマンド  source exe.sh -> log
+            // printf("%d, (%d, %d) -> %d\n", flag, j, i, loss[k]);
 
-            if( j == 0 && i == 0 ){
-                thr = loss[j][i];
-            }
             if( flag == 0 ){
-                thr = loss[j][i];
+                thr = loss[k];
             }
             if( flag_found == 1 ){
-                i += TMP_SIZE_W - 1;
+                i += TMP_SIZE_W + 45;
+                k++;
             }
         }
 
         if( flag_found == 1 ){
-            j += TMP_SIZE_H - 1;
+            j += TMP_SIZE_H + 15;
         }
     }
 
-    /*
-    printf("check loss\n");
-    for( j = 0; j < loss_SIZE_H; j++ ){
-        for ( i = 0; i < loss_SIZE_W; i++ ){
-            printf("%d ", loss[j][i]);
-        }            
-        printf("\n");
-    }
-    */
-
     // 相違度の最小値を求める
     // 初期化
-    min.x = 0; min.y = 0; 
-    loss_min = loss[0][0];
+    min.x = found_point[0].x; 
+    min.y = found_point[0].y; 
+    loss_min = loss[0];
 
     // ラスタスキャン
-    for( j = found_point.y; j < loss_SIZE_H; j+=TMP_SIZE_H ){
-        for( i = found_point.x; i < loss_SIZE_W; i+=TMP_SIZE_W ){
+    for( i = 0; i < 12; i++ ){
+        
+        // SSDA
+        if(loss_min > loss[i]){
 
-            // SSD
-            if(loss_min > loss[j][i]){
-
-                // 最小値の更新
-                loss_min = loss[j][i]; 
-                min.x = i; min.y = j;
-            }
+            // 最小値の更新
+            loss_min = loss[i]; 
+            min.x = found_point[i].x; 
+            min.y = found_point[i].y;
         }
     }
 
@@ -286,7 +258,6 @@ Point RSSDA_2(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
 
     // 初期化
     thr = 0;
-
 
     // 相違度マップの生成
     for(j = 0; j < loss_SIZE_H; j++){
