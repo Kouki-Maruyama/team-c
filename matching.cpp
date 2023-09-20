@@ -158,25 +158,32 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
     int i, j, I, J, c;                                     // カウンター
     int thr, flag;
 
-    int flag_found, flag_found_point;
+    int flag_found, flag_point;
     Point found_point;
 
     int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
     loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
     loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
 
-    int loss[loss_SIZE_H][loss_SIZE_W] = {1000};           // 相違度マップ
+    int loss[loss_SIZE_H][loss_SIZE_W] = {0};              // 相違度マップ
     int loss_min;                                          // 相違度マップの最小値
     Point min;                                             // 検出位置
 
     // 初期化
-    thr = 1000;
-    flag_found = 0;
-    flag_found_point = 0;
+    thr = 100;
+    flag_point = 0;
     found_point.x = found_point.y = 0;
+
+    for(j = 0; j < loss_SIZE_H; j++){
+        for(i = 0; i < loss_SIZE_W; i++){
+            loss[j][i] = 1;
+        }
+    }
 
     // 相違度マップの生成
     for(j = 0; j < loss_SIZE_H; j++){
+        flag_found = 0;
+
         for(i = 0; i < loss_SIZE_W; i++){
 
             // 初期化
@@ -187,13 +194,14 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
                 continue;
             }
             else{
-                if( flag_found_point == 0 ){
-                    found_point.x = i;
-                    found_point.y = j;
-
-                    flag_found_point = 1;
-                }
                 flag_found = 1;
+            }
+
+            if( flag_point == 0 ){
+                found_point.x = i;
+                found_point.y = j;
+
+                flag_point = 1;
             }
 
             // ラスタスキャン(選択画素のみ)
@@ -208,16 +216,18 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
                     break;
                 }
             }
+            printf("(%d, %d) -> %d\n", j, i, loss[j][i]);
 
             if( flag == 0 ){
                 thr = loss[j][i];
             }
             if( flag_found == 1 ){
-                i += 196 - 1;
+                i += TMP_SIZE_W;
             }
         }
+
         if( flag_found == 1 ){
-            j += 116 - 1;
+            j += TMP_SIZE_H;
         }
     }
 
@@ -237,8 +247,8 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
     loss_min = loss[0][0];
 
     // ラスタスキャン
-    for( j = found_point.y; j < loss_SIZE_H; j+=116 ){
-        for( i = found_point.x; i < loss_SIZE_W; i+=196 ){
+    for( j = found_point.y; j < loss_SIZE_H; j+=TMP_SIZE_H ){
+        for( i = found_point.x; i < loss_SIZE_W; i+=TMP_SIZE_W ){
 
             // SSD
             if(loss_min > loss[j][i]){
