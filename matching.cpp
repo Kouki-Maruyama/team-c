@@ -170,12 +170,12 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
     Point min;                                             // 検出位置
 
     // 初期化
-    thr = 100;
+    thr = 0;
     flag_point = 0;
     found_point.x = found_point.y = 0;
 
-    for(j = 0; j < loss_SIZE_H; j++){
-        for(i = 0; i < loss_SIZE_W; i++){
+    for(j = 0; j < loss_SIZE_H; j++ ){
+        for(i = 0; i < loss_SIZE_W; i++ ){
             loss[j][i] = 1;
         }
     }
@@ -190,18 +190,21 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
             flag = 0;
                 
             // スタート位置の探索
-            if( input_g[j][i] == background_pixel ){
-                continue;
-            }
-            else{
-                flag_found = 1;
-            }
+            if( !(j == 0 && i == 0) ){
+                if( input_g[j][i] == background_pixel ){
+                    continue;
+                }
+                else{
+                    loss[j][i] = 0;
+                    flag_found = 1;
+                }
 
-            if( flag_point == 0 ){
-                found_point.x = i;
-                found_point.y = j;
+                if( flag_point == 0 ){
+                    found_point.x = i;
+                    found_point.y = j;
 
-                flag_point = 1;
+                    flag_point = 1;
+                }
             }
 
             // ラスタスキャン(選択画素のみ)
@@ -211,23 +214,27 @@ Point RSSDA_1(unsigned char input_g[INPUT_SIZE_H][INPUT_SIZE_W], unsigned char t
 
                 loss[j][i] += (int)(sqrt( ( input_g[J + j][I + i] - temp_g[J][I] ) * ( input_g[J + j][I + i] - temp_g[J][I] ) ));
 
-                if( thr < loss[j][i] ){
+                if( !(j == 0 && i == 0) && thr < loss[j][i] ){
                     flag = 1;
                     break;
                 }
             }
-            printf("(%d, %d) -> %d\n", j, i, loss[j][i]);
+            printf("%d, (%d, %d) -> %d\n", flag, j, i, loss[j][i]);
+            // ログファイル確認コマンド  source exe.sh -> log
 
+            if( j == 0 && i == 0 ){
+                thr = loss[j][i];
+            }
             if( flag == 0 ){
                 thr = loss[j][i];
             }
             if( flag_found == 1 ){
-                i += TMP_SIZE_W;
+                i += TMP_SIZE_W - 1;
             }
         }
 
         if( flag_found == 1 ){
-            j += TMP_SIZE_H;
+            j += TMP_SIZE_H - 1;
         }
     }
 
