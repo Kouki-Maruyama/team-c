@@ -3,7 +3,6 @@
 #include"matching.hpp"
 
 // ============================↓↓↓編集可能↓↓↓========================== //
-// パターン2のみ
 
 #include"luts.hpp"
 
@@ -57,11 +56,10 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
         
             // 発生頻度の低い画素のテンプレートにおける座標を探索，保存
-            int cp_size = 48 ;
-            int interbal = (int)(cp_size / reference_size) ;
+            int interbal = 16 ;
 
-            k = 0 ;
-            n = 1 ;
+            k = -1 ;
+            n = 0 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
@@ -69,8 +67,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         k++ ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n - 1] = com_point_x[j][i] ;
-                        reference_y[n - 1] = com_point_y[j][i] ;
+                        reference_x[n] = com_point_x[j][i] ;
+                        reference_y[n] = com_point_y[j][i] ;
 
                         n++ ;
                     }
@@ -113,11 +111,10 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
         
             // 発生頻度の低い画素のテンプレートにおける座標を探索，保存
-            int cp_size = 3825 ;
-            int interbal = (int)(cp_size / reference_size) ;
+            int interbal = 382 ;
 
-            k = 0 ;
-            n = 1 ;
+            k = -1 ;
+            n = 0 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
@@ -125,8 +122,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         k++ ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n - 1] = com_point_x[j][i] ;
-                        reference_y[n - 1] = com_point_y[j][i] ;
+                        reference_x[n] = com_point_x[j][i] ;
+                        reference_y[n] = com_point_y[j][i] ;
 
                         n++ ;
                     }
@@ -166,14 +163,13 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         com_point_y[p][q] = j ;
                     }
                 }
-            }
+            }   
         
             // 発生頻度の低い画素のテンプレートにおける座標を探索，保存
-            int cp_size = 4266 ;
-            int interbal = (int)(cp_size / reference_size) ;
+            int interbal = 426 ;
 
-            k = 0 ;
-            n = 1 ;
+            k = -1 ;
+            n = 0 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
@@ -181,8 +177,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         k++ ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n - 1] = com_point_x[j][i] ;
-                        reference_y[n - 1] = com_point_y[j][i] ;
+                        reference_x[n] = com_point_x[j][i] ;
+                        reference_y[n] = com_point_y[j][i] ;
 
                         n++ ;
                     }
@@ -194,44 +190,98 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
     global_count++ ;
 
 
-    // // -------------------- 探索アルゴリズム(パターン3) --------------------
+    // // -------------------- 探索アルゴリズム --------------------
 
-    // 変数の宣言
-    int count ;
-    int loss_SIZE_H, loss_SIZE_W ;                          // 相違度マップのサイズ
+    if( pattern == 1 ){
+        
+        // 変数の宣言
+        int count ;
+        int loss_SIZE_H, loss_SIZE_W ;
+        int found_point_x, found_point_y ;
 
-    // 初期化
-    loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1 ;
-    loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1 ;
+        // 初期化
+        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1 ;
+        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1 ;
 
-    // ラスタスキャン
-    for( n = 0 ; n < reference_size ; ++n ){
-        for( j = 0 ; j < loss_SIZE_H ; ++j ){
-            for( i = 0 ; i < loss_SIZE_W ; ++i ){
+        found_point_x = found_point_y = 0 ;
+
+        // スタート位置の探索
+        for( j = 0 ; j < loss_SIZE_H ; j++ ){
+            for( i = 0 ; i < loss_SIZE_W ; i++ ){
+
+                if( input[1][j + reference_y[0]][i + reference_x[0]] == temp[1][reference_y[0]][reference_x[0]] ){
+                    found_point_x = i;
+                    found_point_y = j;
+
+                    i = loss_SIZE_W;
+                    j = loss_SIZE_H;
+                }
+            }
+        }
+
+        // ラスタスキャン
+        for( j = found_point_y ; j < loss_SIZE_H ; j += 116 ){
+            for( i = found_point_x ; i < loss_SIZE_W ; i += 197 ){
 
                 // 初期化
                 count = 0 ;
 
-                // 背景画素スキップ
-                if( input[1][j + reference_y[n]][i + reference_x[n]] == temp[1][reference_y[n]][reference_x[n]] ){
+                // 選択画素のみ探索
+                for( k = 0 ; k < reference_size ; k++ ){
 
-                    // 選択画素のみ探索
-                    for( k = 0 ; k < reference_size ; ++k ){
+                    if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
+                        count++;
 
-                        if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
-                            count++;
+                        if( count >= 3 ){
+                            out_point.x = i;
+                            out_point.y = j;
 
-                            if( count >= 5 ){
-                                out_point.x = i ;
-                                out_point.y = j ;
+                            return out_point ;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else{
 
-                                return out_point ;
+        // 変数の宣言
+        int count ;
+        int loss_SIZE_H, loss_SIZE_W ;
+
+        // 初期化
+        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1 ;
+        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1 ;
+
+        // ラスタスキャン
+        for( n = 0 ; n < reference_size ; ++n ){
+            for( j = 0 ; j < loss_SIZE_H ; ++j ){
+                for( i = 0 ; i < loss_SIZE_W ; ++i ){
+
+                    // 初期化
+                    count = 0 ;
+
+                    // 背景画素スキップ
+                    if( input[1][j + reference_y[n]][i + reference_x[n]] == temp[1][reference_y[n]][reference_x[n]] ){
+
+                        // 選択画素のみ探索
+                        for( k = 0 ; k < reference_size ; ++k ){
+
+                            if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
+                                count++;
+
+                                if( count >= 5 ){
+                                    out_point.x = i ;
+                                    out_point.y = j ;
+
+                                    return out_point ;
+                                }
                             }
                         }
                     }
                 }
             }
-        } 
+        }
     }
 
     return out_point ;
