@@ -3,6 +3,7 @@
 #include"matching.hpp"
 
 // ============================↓↓↓編集可能↓↓↓========================== //
+// パターン2のみ
 
 #include"luts.hpp"
 
@@ -18,7 +19,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
     if( global_count == 0 ){
 
         // 変数の宣言
-        int i, j, c, n;
+        int i, j, k, n;
         int cp_size;
 
         // パターン判別
@@ -30,8 +31,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             reference_size = 3;
 
              // 入力画像における背景画素の決定
-            for( j = 0; j < INPUT_SIZE_H; j += INPUT_SIZE_H - 2 ){
-                for( i = 0; i < INPUT_SIZE_W; i += INPUT_SIZE_W - 2 ){
+            for( j = 0 ; j < INPUT_SIZE_H ; j += INPUT_SIZE_H - 2 ){
+                for( i = 0 ; i < INPUT_SIZE_W ; i += INPUT_SIZE_W - 2 ){
                     if( input[1][j][i] == input[1][j][i + 1] ){
                         background_pixel = input[1][j][i];
 
@@ -42,29 +43,31 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
 
             // 同時生成行列の作成
-            for( j = 0; j < TMP_SIZE_H; j++ ){
-                for( i = 0; i < TMP_SIZE_W - 1; i++ ){
+            int TMP_SIZE_W_1 = TMP_SIZE_W - 1;
+
+            for( j = 0 ; j < TMP_SIZE_H ; j++ ){
+                for( i = 0 ; i < TMP_SIZE_W_1 ; i++ ){
                     com[temp[1][j][i + 1]][temp[1][j][i]]++;
                     com[temp[1][j][i]][temp[1][j][i + 1]]++;
                 }
             }
 
             // 発生頻度の低い画素の座標を探索，保存
-            COM_POINT thin_point[reference_size];
+            int thin_point_p[reference_size];
+            int thin_point_q[reference_size];
             int interbal = cp_size / reference_size;
 
-            c = 0;
+            k = 0;
             n = 1;
-            for( j = 0 ; j < COM_SIZE; j++ ){
-                for( i = 0 ; i < COM_SIZE; i++ ){
+            for( j = 0 ; j < COM_SIZE ; j++ ){
+                for( i = 0 ; i < COM_SIZE ; i++ ){
 
-                    if( com[j][i] == 1 ){       // 頻度値１のペア数を記録
-                        c++;
-                    }
+                    if( com[j][i] == 1 )         // 頻度値１のペア数を記録
+                        k++;
                     
-                    if( c == interbal * n ){     // 選択ペアの間引き処理
-                        thin_point[n - 1].p = i;
-                        thin_point[n - 1].q = j;
+                    if( k == interbal * n ){     // 選択ペアの間引き処理
+                        thin_point_p[n - 1] = i;
+                        thin_point_q[n - 1] = j;
 
                         n++;
                     }
@@ -72,15 +75,15 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
 
             // 選択ペアのテンプレートにおける座標を探索
-            for( c = 0; c < reference_size; c++ ){
-                for( j = 0; j < TMP_SIZE_H; j++ ){
-                    for( i = 0; i < TMP_SIZE_W - 1; i++ ){
+            for( k = 0 ; k < reference_size ; k++ ){
+                for( j = 0 ; j < TMP_SIZE_H ; j++ ){
+                    for( i = 0 ; i < TMP_SIZE_W_1 ; i++ ){
                         
-                        if( (temp[1][j][i] == thin_point[c].p && temp[1][j][i + 1] == thin_point[c].q) || 
-                            (temp[1][j][i + 1] == thin_point[c].p && temp[1][j][i] == thin_point[c].q) ){
+                        if( ( temp[1][j][i] == thin_point_p[k] && temp[1][j][i + 1] == thin_point_q[k] ) || 
+                            ( temp[1][j][i + 1] == thin_point_p[k] && temp[1][j][i] == thin_point_q[k] ) ){
                             
-                            reference_x[c] = i;
-                            reference_y[c] = j;
+                            reference_x[k] = i;
+                            reference_y[k] = j;
                         }
                     }
                 }
@@ -92,11 +95,11 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             // 初期化
             pattern = 2;
             cp_size = 3825;
-            reference_size = 14;
+            reference_size = 10;
 
             // 入力画像における背景画素の決定
-            for( j = 0; j < INPUT_SIZE_H; j += INPUT_SIZE_H - 2 ){
-                for( i = 0; i < INPUT_SIZE_W; i += INPUT_SIZE_W - 2 ){
+            for( j = 0 ; j < INPUT_SIZE_H ; j += INPUT_SIZE_H - 2 ){
+                for( i = 0 ; i < INPUT_SIZE_W; i += INPUT_SIZE_W - 2 ){
                     if( input[1][j][i] == input[1][j][i + 1] ){
                         background_pixel = input[1][j][i];
 
@@ -106,30 +109,47 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }
 
+            // スタート位置の探索
+            for(j = 0 ; j < TMP_SIZE_H ; j++){
+                for(i = 0 ; i < TMP_SIZE_W ; i++){
+
+                    if( temp[1][j][i] != background_pixel ){
+                        found_x = i;
+                        found_y = j;
+
+                        i = TMP_SIZE_W;
+                        j = TMP_SIZE_H;
+                    }
+
+                }
+            }
+
             // 同時生成行列の作成
-            for( j = 0; j < TMP_SIZE_H; j++ ){
-                for( i = 0; i < TMP_SIZE_W - 1; i++ ){
+            int TMP_SIZE_W_1 = TMP_SIZE_W - 1;
+
+            for( j = 0 ; j < TMP_SIZE_H ; j++ ){
+                for( i = 0 ; i < TMP_SIZE_W_1 ; i++ ){
                     com[temp[1][j][i + 1]][temp[1][j][i]]++;
                     com[temp[1][j][i]][temp[1][j][i + 1]]++;
                 }
             }
             
             // 発生頻度の低い画素の座標を探索，保存
-            COM_POINT thin_point[reference_size];
+            int thin_point_p[reference_size];
+            int thin_point_q[reference_size];
             int interbal = cp_size / reference_size;
 
-            c = 0;
+            k = 0;
             n = 1;
-            for( j = 0 ; j < COM_SIZE; j++ ){
-                for( i = 0 ; i < COM_SIZE; i++ ){
+            for( j = 0 ; j < COM_SIZE ; j++ ){
+                for( i = 0 ; i < COM_SIZE ; i++ ){
 
-                    if( com[j][i] == 1 ){          // 頻度値１のペア数を記録
-                        c++;
-                    }
+                    if( com[j][i] == 1 )           // 頻度値１のペア数を記録
+                        k++;
                     
-                    if( c == interbal * n ){       // 選択ペアの間引き処理
-                        thin_point[n - 1].p = i;
-                        thin_point[n - 1].q = j;
+                    if( k == interbal * n ){       // 選択ペアの間引き処理
+                        thin_point_p[n - 1] = i;
+                        thin_point_q[n - 1] = j;
 
                         n++;
                     }
@@ -137,15 +157,15 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
 
             // 選択ペアのテンプレートにおける座標を探索
-            for( c = 0; c < reference_size; c++ ){
-                for( j = 0; j < TMP_SIZE_H; j++ ){
-                    for( i = 0; i < TMP_SIZE_W - 1; i++ ){
+            for( k = 0 ; k < reference_size ; k++ ){
+                for( j = 0 ; j < TMP_SIZE_H ; j++ ){
+                    for( i = 0 ; i < TMP_SIZE_W_1 ; i++ ){
                         
-                        if( (temp[1][j][i] == thin_point[c].p && temp[1][j][i + 1] == thin_point[c].q) || 
-                            (temp[1][j][i + 1] == thin_point[c].p && temp[1][j][i] == thin_point[c].q) ){
+                        if( ( temp[1][j][i] == thin_point_p[k] && temp[1][j][i + 1] == thin_point_q[k] ) || 
+                            ( temp[1][j][i + 1] == thin_point_p[k] && temp[1][j][i] == thin_point_q[k] ) ){
                             
-                            reference_x[c] = i;
-                            reference_y[c] = j;
+                            reference_x[k] = i;
+                            reference_y[k] = j;
 
                             // printf("reference[%d](%d, %d)\n", c, j, i);
                         }
@@ -159,11 +179,11 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             // 初期化
             pattern = 3;
             cp_size = 4266;
-            reference_size = 20;
+            reference_size = 10;
 
             // 入力画像における背景画素の決定
-            for( j = 0; j < INPUT_SIZE_H; j += INPUT_SIZE_H - 2 ){
-                for( i = 0; i < INPUT_SIZE_W; i += INPUT_SIZE_W - 2 ){
+            for( j = 0 ; j < INPUT_SIZE_H ; j += INPUT_SIZE_H - 2 ){
+                for( i = 0 ; i < INPUT_SIZE_W ; i += INPUT_SIZE_W - 2 ){
                     if( input[1][j][i] == input[1][j][i + 1] ){
                         background_pixel = input[1][j][i];
 
@@ -174,29 +194,32 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
 
             // 同時生成行列の作成
-            for( j = 0; j < TMP_SIZE_H; j++ ){
-                for( i = 0; i < TMP_SIZE_W - 1; i++ ){
+            int TMP_SIZE_W_1 = TMP_SIZE_W - 1;
+
+            for( j = 0 ; j < TMP_SIZE_H ; j++ ){
+                for( i = 0 ; i < TMP_SIZE_W_1 ; i++ ){
                     com[temp[1][j][i + 1]][temp[1][j][i]]++;
                     com[temp[1][j][i]][temp[1][j][i + 1]]++;
                 }
             }
 
             // 発生頻度の低い画素の座標を探索，保存
-            COM_POINT thin_point[reference_size];       // 頻度値1のペアを保存(座標)
+            int thin_point_p[reference_size];       // 頻度値1のペアを保存(座標)
+            int thin_point_q[reference_size];
             int interbal = cp_size / reference_size;
 
-            c = 0;
+            k = 0;
             n = 1;
-            for( j = 0 ; j < COM_SIZE; j++ ){
-                for( i = 0 ; i < COM_SIZE; i++ ){
+            for( j = 0 ; j < COM_SIZE ; j++ ){
+                for( i = 0 ; i < COM_SIZE ; i++ ){
 
                     if( com[j][i] == 1 ){       // 頻度値１のペア数を記録
-                        c++;
+                        k++;
                     }
                     
-                    if( c == interbal * n ){     // 選択ペアの間引き処理
-                        thin_point[n - 1].p = i;
-                        thin_point[n - 1].q = j;
+                    if( k == interbal * n ){     // 選択ペアの間引き処理
+                        thin_point_p[n - 1] = i;
+                        thin_point_q[n - 1] = j;
 
                         n++;
                     }
@@ -204,15 +227,15 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             }
 
             // 選択ペアのテンプレートにおける座標を探索
-            for( c = 0; c < reference_size; c++ ){
-                for( j = 0; j < TMP_SIZE_H; j++ ){
-                    for( i = 0; i < TMP_SIZE_W - 1; i++ ){     
+            for( k = 0 ; k < reference_size ; k++ ){
+                for( j = 0 ; j < TMP_SIZE_H ; j++ ){
+                    for( i = 0 ; i < TMP_SIZE_W_1 ; i++ ){     
 
-                        if( (temp[1][j][i] == thin_point[c].p && temp[1][j][i + 1] == thin_point[c].q) || 
-                            (temp[1][j][i + 1] == thin_point[c].p && temp[1][j][i] == thin_point[c].q) ){
+                        if( ( temp[1][j][i] == thin_point_p[k] && temp[1][j][i + 1] == thin_point_q[k] ) || 
+                            ( temp[1][j][i + 1] == thin_point_p[k] && temp[1][j][i] == thin_point_q[k] ) ){
                             
-                            reference_x[c] = i;
-                            reference_y[c] = j;
+                            reference_x[k] = i;
+                            reference_y[k] = j;
                         }
                     }
                 }
@@ -224,15 +247,9 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
     global_count++;
 
     // SSDAを用いて探索
-    if( pattern == 1 ){
-        out_point = RSSDA_1(input, temp);
-    }
-    else if( pattern == 2 ){
-        out_point = RSSDA_2(input, temp);
-    }
-    else{
-        out_point = RSSDA_3(input, temp);
-    }
+    if( pattern == 1 )          out_point = RSSDA_1(input, temp);
+    else if( pattern == 2 )     out_point = RSSDA_2(input, temp);
+    else                        out_point = RSSDA_3(input, temp);
 
     return out_point;
 }
@@ -240,28 +257,25 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
 Point RSSDA_1(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp[CHANNEL][TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
-    int i, j, c, k;                                        // カウンター
+    int i, j, k, count;                                    // カウンター
     int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
     loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
     loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
 
-    Point found_point;
-    Point min;                                             // 検出位置
+    int found_point_x, found_point_y;
+    Point min.x, min.y;                                      // 検出位置
 
     // 初期化
     min.x = min.y = 0;
-    found_point.x = found_point.y = 0;
+    found_point_x = found_point_y = 0;
 
     // スタート位置の探索
-    for(j = 0; j < loss_SIZE_H; j++){
-        for(i = 0; i < loss_SIZE_W; i++){
+    for( j = 0; j < loss_SIZE_H ; j++ ){
+        for( i = 0; i < loss_SIZE_W ; i++ ){
 
-            if( input[1][j][i] == background_pixel ){
-                continue;
-            }
-            else{
-                found_point.x = i;
-                found_point.y = j;
+            if( input[1][j][i] != background_pixel ){
+                found_point_x = i;
+                found_point_y = j;
 
                 i = loss_SIZE_W;
                 j = loss_SIZE_H;
@@ -271,19 +285,19 @@ Point RSSDA_1(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned
     }
 
     // ラスタスキャン
-    for(j = found_point.y; j < loss_SIZE_H; j += 116){
-        for(i = found_point.x; i < loss_SIZE_W; i += 197){
+    for( j = found_point_y ; j < loss_SIZE_H ; j += 116){
+        for( i = found_point_x ; i < loss_SIZE_W ; i += 197){
 
             // 初期化
-            c = 0;
+            count = 0;
 
             // 選択画素のみ探索
-            for(k = 0; k < reference_size; k++ ){
+            for( k = 0 ; k < reference_size ; k++ ){
 
                 if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
-                    c++;
+                    count++;
 
-                    if( c >= 3 ){
+                    if( count >= 3 ){
                         min.x = i;
                         min.y = j;
 
@@ -302,26 +316,42 @@ Point RSSDA_1(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned
 Point RSSDA_2(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp[CHANNEL][TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
-    int i, j, c, k;                                        // カウンター
+    int i, j, c, k, s;                                     // カウンター
 
     int loss_SIZE_H, loss_SIZE_W;                          // 相違度マップのサイズ
     loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1;
     loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1;
 
+    // Point start_s_point, start_f_point;                    // 探索開始位置を保存
+    // Point remove_s_point, start_f_point;                   // 探索除外位置を保存
     Point min;                                             // 検出位置
 
     // 初期化
+    /*
+    s = 0;
     min.x = 0; min.y = 0;
 
+    start_s_point.x = INPUT_CENTER_X + INPUT_CENTER_X * 0.25;
+    start_s_point.y = INPUT_CENTER_Y + INPUT_CENTER_Y * 0.25;
+
+    start_f_point.x = INPUT_CENTER_X - INPUT_CENTER_X * 0.25;
+    start_f_point.y = INPUT_CENTER_Y - INPUT_CENTER_Y * 0.25;
+    
+    remove_s_point.x = remove_s_point.y = 0;
+    remove_f_point.x = remove_f_point.y = 0;
+    */
+
     // ラスタスキャン
-    for(j = 0; j < loss_SIZE_H; j++){
-        for(i = 0; i < loss_SIZE_W; i++){
+    for(j = start_s_point.y; j < start_f_point.y; j++){
+        for(i = start_s_point.x; i < start_f_point.x; i++){
 
             // 初期化
             c = 0;
+
+            // 探索除外位置の判別
             
             // 背景画素スキップ
-            if( input[1][j + reference_y[0]][i + reference_x[0]] == background_pixel ){
+            if( input[1][j + found_y][i + found_x] == background_pixel ){
                 continue;
             }
 
@@ -331,7 +361,7 @@ Point RSSDA_2(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned
                 if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
                     c++;
 
-                    if( c >= 7 ){
+                    if( c >= 5 ){
                         min.x = i;
                         min.y = j;
 
@@ -341,6 +371,8 @@ Point RSSDA_2(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned
                     }
                 }
             }
+
+
         }
     }
 
@@ -361,7 +393,7 @@ Point RSSDA_3(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned
     // 初期化
     min.x = 0; min.y = 0;
 
-    // 相違度マップの生成
+    // ラスタスキャン
     for(j = 0; j < loss_SIZE_H; j++){
         for(i = 0; i < loss_SIZE_W; i++){
 
@@ -369,27 +401,25 @@ Point RSSDA_3(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned
             c = 0;
 
             // 背景画素スキップ
-            if( (input[1][j][i] == background_pixel && input[1][j][i + 1] == background_pixel) ||
-                (input[1][j][i + TMP_SIZE_W - 1] == background_pixel && input[1][j][i + TMP_SIZE_W] == background_pixel) ||
-                (input[1][j + TMP_SIZE_H - 1][i] == background_pixel && input[1][j + TMP_SIZE_H - 1][i + 1] == background_pixel) ||
-                (input[1][j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel && input[1][j + TMP_SIZE_H - 1][i + TMP_SIZE_W]) ){
+            if( !(input[1][j][i] == background_pixel && input[1][j][i + 1] == background_pixel) &&
+                !(input[1][j][i + TMP_SIZE_W - 1] == background_pixel && input[1][j][i + TMP_SIZE_W] == background_pixel) &&
+                !(input[1][j + TMP_SIZE_H - 1][i] == background_pixel && input[1][j + TMP_SIZE_H - 1][i + 1] == background_pixel) &&
+                !(input[1][j + TMP_SIZE_H - 1][i + TMP_SIZE_W - 1] == background_pixel && input[1][j + TMP_SIZE_H - 1][i + TMP_SIZE_W]) ){
 
-                continue;
-            }
+                // 選択画素のみ探索
+                for(k = 0; k < reference_size; k++ ){
 
-            // 選択画素のみ探索
-            for(k = 0; k < reference_size; k++ ){
+                    if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
+                        c++;
 
-                if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
-                    c++;
+                        if( c >= 5 ){
+                            min.x = i;
+                            min.y = j;
 
-                    if( c >= 10 ){
-                        min.x = i;
-                        min.y = j;
-
-                        i = loss_SIZE_W;
-                        j = loss_SIZE_H;
-                        break;
+                            i = loss_SIZE_W;
+                            j = loss_SIZE_H;
+                            break;
+                        }
                     }
                 }
             }
