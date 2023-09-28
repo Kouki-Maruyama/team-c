@@ -26,6 +26,18 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             pattern = 1 ;
             reference_size = 3 ;
 
+            // 入力画像における背景画素の決定
+            for( j = 0; j < INPUT_SIZE_H; j += INPUT_SIZE_H - 2 ){
+                for( i = 0; i < INPUT_SIZE_W; i += INPUT_SIZE_W - 2 ){
+                    if( input[1][j][i] == input[1][j][i + 1] ){
+                        background_pixel = input[1][j][i];
+
+                        i = INPUT_SIZE_W;
+                        j = INPUT_SIZE_H;
+                    }
+                }
+            }
+
             // 同時生成行列の作成
             int p, q ;
             int com[COM_SIZE][COM_SIZE] ;
@@ -58,8 +70,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             // 発生頻度の低い画素のテンプレートにおける座標を探索，保存
             int interbal = 16 ;
 
-            k = -1 ;
-            n = 0 ;
+            k = 0 ;
+            n = 1 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
@@ -67,8 +79,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         k++ ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n] = com_point_x[j][i] ;
-                        reference_y[n] = com_point_y[j][i] ;
+                        reference_x[n - 1] = com_point_x[j][i] ;
+                        reference_y[n - 1] = com_point_y[j][i] ;
 
                         n++ ;
                     }
@@ -113,8 +125,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             // 発生頻度の低い画素のテンプレートにおける座標を探索，保存
             int interbal = 382 ;
 
-            k = -1 ;
-            n = 0 ;
+            k = 0 ;
+            n = 1 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
@@ -122,8 +134,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         k++ ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n] = com_point_x[j][i] ;
-                        reference_y[n] = com_point_y[j][i] ;
+                        reference_x[n - 1] = com_point_x[j][i] ;
+                        reference_y[n - 1] = com_point_y[j][i] ;
 
                         n++ ;
                     }
@@ -168,8 +180,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             // 発生頻度の低い画素のテンプレートにおける座標を探索，保存
             int interbal = 426 ;
 
-            k = -1 ;
-            n = 0 ;
+            k = 0 ;
+            n = 1 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
@@ -177,8 +189,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         k++ ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n] = com_point_x[j][i] ;
-                        reference_y[n] = com_point_y[j][i] ;
+                        reference_x[n - 1] = com_point_x[j][i] ;
+                        reference_y[n - 1] = com_point_y[j][i] ;
 
                         n++ ;
                     }
@@ -209,7 +221,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         for( j = 0 ; j < loss_SIZE_H ; j++ ){
             for( i = 0 ; i < loss_SIZE_W ; i++ ){
 
-                if( input[1][j + reference_y[0]][i + reference_x[0]] == temp[1][reference_y[0]][reference_x[0]] ){
+                if( input[1][j][i] != background_pixel ){
                     found_point_x = i;
                     found_point_y = j;
 
