@@ -27,13 +27,13 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             reference_size = 3 ;
 
             // 入力画像における背景画素の決定
-            for( j = 0; j < INPUT_SIZE_H; j += INPUT_SIZE_H - 2 ){
-                for( i = 0; i < INPUT_SIZE_W; i += INPUT_SIZE_W - 2 ){
+            for( j = 0 ; j < INPUT_SIZE_H ; j += INPUT_SIZE_H - 2 ){
+                for( i = 0 ; i < INPUT_SIZE_W ; i += INPUT_SIZE_W - 2 ){
                     if( input[1][j][i] == input[1][j][i + 1] ){
-                        background_pixel = input[1][j][i];
+                        background_pixel = input[1][j][i] ;
 
-                        i = INPUT_SIZE_W;
-                        j = INPUT_SIZE_H;
+                        i = INPUT_SIZE_W ;
+                        j = INPUT_SIZE_H ;
                     }
                 }
             }
@@ -83,6 +83,11 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         reference_y[n - 1] = com_point_y[j][i] ;
 
                         n++ ;
+
+                        if( n == reference_size ){                  // 終了条件
+                            i = COM_SIZE ;
+                            j = COM_SIZE ;
+                        }
                     }
                 }
             }
@@ -138,6 +143,11 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         reference_y[n - 1] = com_point_y[j][i] ;
 
                         n++ ;
+
+                        if( n == reference_size ){                  // 終了条件
+                            i = COM_SIZE ;
+                            j = COM_SIZE ;
+                        }
                     }
                 }
             }
@@ -193,6 +203,11 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         reference_y[n - 1] = com_point_y[j][i] ;
 
                         n++ ;
+
+                        if( n == reference_size ){                  // 終了条件
+                            i = COM_SIZE ;
+                            j = COM_SIZE ;
+                        }
                     }
                 }
             }
@@ -212,8 +227,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         int found_point_x, found_point_y ;
 
         // 初期化
-        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1 ;
-        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1 ;
+        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H ;
+        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W ;
 
         found_point_x = found_point_y = 0 ;
 
@@ -222,33 +237,39 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             for( i = 0 ; i < loss_SIZE_W ; i++ ){
 
                 if( input[1][j][i] != background_pixel ){
-                    found_point_x = i;
-                    found_point_y = j;
+                    found_point_x = i ;
+                    found_point_y = j ;
 
-                    i = loss_SIZE_W;
-                    j = loss_SIZE_H;
+                    i = loss_SIZE_W ;
+                    j = loss_SIZE_H ;
                 }
             }
         }
 
         // ラスタスキャン
-        for( j = found_point_y ; j < loss_SIZE_H ; j += 116 ){
-            for( i = found_point_x ; i < loss_SIZE_W ; i += 197 ){
+        for( n = 0 ; n < reference_size ; ++n ){
+            for( j = found_point_y ; j < loss_SIZE_H ; j += 116 ){
+                for( i = found_point_x ; i < loss_SIZE_W ; i += 197 ){
+                    
+                    // 背景画素スキップ
+                    if( input[1][j + reference_y[n]][i + reference_x[n]] == temp[1][reference_y[n]][reference_x[n]] ){
 
-                // 初期化
-                count = 0 ;
+                        // 初期化
+                        count = 0 ;
 
-                // 選択画素のみ探索
-                for( k = 0 ; k < reference_size ; k++ ){
+                        // 選択画素のみ探索
+                        for( k = 0 ; k < reference_size ; ++k ){
 
-                    if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
-                        count++;
+                            if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
+                                count++ ;
 
-                        if( count >= 3 ){
-                            out_point.x = i;
-                            out_point.y = j;
+                                if( count >= 3 ){
+                                    out_point.x = i ;
+                                    out_point.y = j ;
 
-                            return out_point ;
+                                    return out_point ;
+                                }
+                            }
                         }
                     }
                 }
@@ -262,19 +283,19 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
         int loss_SIZE_H, loss_SIZE_W ;
 
         // 初期化
-        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H + 1 ;
-        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W + 1 ;
+        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H ;
+        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W ;
 
         // ラスタスキャン
         for( n = 0 ; n < reference_size ; ++n ){
             for( j = 0 ; j < loss_SIZE_H ; ++j ){
                 for( i = 0 ; i < loss_SIZE_W ; ++i ){
 
-                    // 初期化
-                    count = 0 ;
-
                     // 背景画素スキップ
                     if( input[1][j + reference_y[n]][i + reference_x[n]] == temp[1][reference_y[n]][reference_x[n]] ){
+
+                        // 初期化
+                        count = 0 ;
 
                         // 選択画素のみ探索
                         for( k = 0 ; k < reference_size ; ++k ){
