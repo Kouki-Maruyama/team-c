@@ -9,7 +9,7 @@
 Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigned char temp[CHANNEL][TMP_SIZE_H][TMP_SIZE_W]){
 
     // 変数の宣言
-    int i, j, k, n ;                                                // カウンター
+    int i, j, k, n, m, count ;                                      // カウンター
     Point out_point ;                                               // 検出位置
 
     // 初期化
@@ -27,6 +27,8 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             reference_size = 3 ;
 
             // 入力画像における背景画素の決定
+            int background_pixel = 0;
+
             for( j = 0 ; j < INPUT_SIZE_H ; j += INPUT_SIZE_H - 2 ){
                 for( i = 0 ; i < INPUT_SIZE_W ; i += INPUT_SIZE_W - 2 ){
                     if( input[1][j][i] == input[1][j][i + 1] ){
@@ -38,15 +40,29 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }
 
+            // 探索開始位置の探索
+            for( j = 0 ; j < loss1_SIZE_H ; ++j ){
+                for( i = 0 ; i < loss1_SIZE_W ; ++i ){
+
+                    if( input[1][j][i] != background_pixel ){
+                        found_point_x = i ;
+                        found_point_y = j ;
+
+                        i = loss1_SIZE_W ;
+                        j = loss1_SIZE_H ;
+                    }
+                }
+            }
+
             // 同時生成行列の作成
             int p, q ;
             int com[COM_SIZE][COM_SIZE] ;
             int com_point_x[COM_SIZE][COM_SIZE] ;
             int com_point_y[COM_SIZE][COM_SIZE] ;
-            int TMP_SIZE_W_1 = TMP_SIZE_W - 1 ;
+            int TMP_SIZE_W1 = TMP_SIZE_W - 1 ;
 
             for( j = 0 ; j < TMP_SIZE_H ; ++j ){
-                for( i = 0 ; i < TMP_SIZE_W_1 ; ++i ){
+                for( i = 0 ; i < TMP_SIZE_W1 ; ++i ){
 
                     // 初期化
                     p = temp[1][j][i] ;
@@ -57,7 +73,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                     com[p][q]++ ;
 
                     // 同時生成行列に対応する座標ペアを保存
-                    if( com[p][q] == 1 ){
+                    if( com[q][p] == 1 ){
                         com_point_x[q][p] = i ;
                         com_point_y[q][p] = j ;
 
@@ -72,17 +88,19 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
 
             k = 0 ;
             n = 1 ;
+            m = 0 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
                     if( com[j][i] == 1 )                            // 頻度値１のペア数を記録
-                        k++ ;
+                        ++k ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n - 1] = com_point_x[j][i] ;
-                        reference_y[n - 1] = com_point_y[j][i] ;
+                        reference_x[m] = com_point_x[j][i] ;
+                        reference_y[m] = com_point_y[j][i] ;
 
-                        n++ ;
+                        ++n ;
+                        ++m ;
 
                         if( n == reference_size ){                  // 終了条件
                             i = COM_SIZE ;
@@ -103,10 +121,10 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             int com[COM_SIZE][COM_SIZE] ;
             int com_point_x[COM_SIZE][COM_SIZE] ;
             int com_point_y[COM_SIZE][COM_SIZE] ;
-            int TMP_SIZE_W_1 = TMP_SIZE_W - 1 ;
+            int TMP_SIZE_W1 = TMP_SIZE_W - 1 ;
 
             for( j = 0 ; j < TMP_SIZE_H ; ++j ){
-                for( i = 0 ; i < TMP_SIZE_W_1 ; ++i ){
+                for( i = 0 ; i < TMP_SIZE_W1 ; ++i ){
 
                     // 初期化
                     p = temp[1][j][i] ;
@@ -117,7 +135,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                     com[p][q]++ ;
 
                     // 同時生成行列に対応する座標ペアを保存
-                    if( com[p][q] == 1 ){
+                    if( com[q][p] == 1 ){
                         com_point_x[q][p] = i ;
                         com_point_y[q][p] = j ;
 
@@ -132,17 +150,19 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
 
             k = 0 ;
             n = 1 ;
+            m = 0 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
 
                     if( com[j][i] == 1 )                            // 頻度値１のペア数を記録
-                        k++ ;
+                        ++k ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n - 1] = com_point_x[j][i] ;
-                        reference_y[n - 1] = com_point_y[j][i] ;
+                        reference_x[m] = com_point_x[j][i] ;
+                        reference_y[m] = com_point_y[j][i] ;
 
-                        n++ ;
+                        ++n ;
+                        ++m ;
 
                         if( n == reference_size ){                  // 終了条件
                             i = COM_SIZE ;
@@ -163,10 +183,10 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
             int com[COM_SIZE][COM_SIZE] ;
             int com_point_x[COM_SIZE][COM_SIZE] ;
             int com_point_y[COM_SIZE][COM_SIZE] ;
-            int TMP_SIZE_W_1 = TMP_SIZE_W - 1 ;
+            int TMP_SIZE_W1 = TMP_SIZE_W - 1 ;
 
             for( j = 0 ; j < TMP_SIZE_H ; ++j ){
-                for( i = 0 ; i < TMP_SIZE_W_1 ; ++i ){
+                for( i = 0 ; i < TMP_SIZE_W1 ; ++i ){
 
                     // 初期化
                     p = temp[1][j][i] ;
@@ -177,7 +197,7 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                     com[p][q]++ ;
 
                     // 同時生成行列に対応する座標ペアを保存
-                    if( com[p][q] == 1 ){
+                    if( com[q][p] == 1 ){
                         com_point_x[q][p] = i ;
                         com_point_y[q][p] = j ;
 
@@ -192,17 +212,19 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
 
             k = 0 ;
             n = 1 ;
+            m = 0 ;
             for( j = 0 ; j < COM_SIZE ; ++j ){
                 for( i = 0 ; i < COM_SIZE ; ++i ){
-
+                    
                     if( com[j][i] == 1 )                            // 頻度値１のペア数を記録
-                        k++ ;
+                        ++k ;
                         
                     if( k == interbal * n ){                        // 選択ペアの間引き処理
-                        reference_x[n - 1] = com_point_x[j][i] ;
-                        reference_y[n - 1] = com_point_y[j][i] ;
+                        reference_x[m] = com_point_x[j][i] ;
+                        reference_y[m] = com_point_y[j][i] ;
 
-                        n++ ;
+                        ++n ;
+                        ++m ;
 
                         if( n == reference_size ){                  // 終了条件
                             i = COM_SIZE ;
@@ -212,46 +234,21 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }
         }
+        ++global_count ;
 
     }
-    global_count++ ;
 
 
-    // // -------------------- 探索アルゴリズム --------------------
+    // -------------------- 探索アルゴリズム --------------------
 
     if( pattern == 1 ){
         
-        // 変数の宣言
-        int count ;
-        int loss_SIZE_H, loss_SIZE_W ;
-        int found_point_x, found_point_y ;
-
-        // 初期化
-        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H ;
-        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W ;
-
-        found_point_x = found_point_y = 0 ;
-
-        // スタート位置の探索
-        for( j = 0 ; j < loss_SIZE_H ; j++ ){
-            for( i = 0 ; i < loss_SIZE_W ; i++ ){
-
-                if( input[1][j][i] != background_pixel ){
-                    found_point_x = i ;
-                    found_point_y = j ;
-
-                    i = loss_SIZE_W ;
-                    j = loss_SIZE_H ;
-                }
-            }
-        }
-
         // ラスタスキャン
         for( n = 0 ; n < reference_size ; ++n ){
-            for( j = found_point_y ; j < loss_SIZE_H ; j += 116 ){
-                for( i = found_point_x ; i < loss_SIZE_W ; i += 197 ){
+            for( j = found_point_y ; j < loss1_SIZE_H ; j += 116 ){
+                for( i = found_point_x ; i < loss1_SIZE_W ; i += 197 ){
                     
-                    // 背景画素スキップ
+                    // 画素スキップ
                     if( input[1][j + reference_y[n]][i + reference_x[n]] == temp[1][reference_y[n]][reference_x[n]] ){
 
                         // 初期化
@@ -261,9 +258,9 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         for( k = 0 ; k < reference_size ; ++k ){
 
                             if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
-                                count++ ;
+                                ++count ;
 
-                                if( count >= 3 ){
+                                if( count > 2 ){
                                     out_point.x = i ;
                                     out_point.y = j ;
 
@@ -275,23 +272,16 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                 }
             }
         }
+
     }
-    else{
-
-        // 変数の宣言
-        int count ;
-        int loss_SIZE_H, loss_SIZE_W ;
-
-        // 初期化
-        loss_SIZE_H = INPUT_SIZE_H - TMP_SIZE_H ;
-        loss_SIZE_W = INPUT_SIZE_W - TMP_SIZE_W ;
+    else if( pattern == 2 ){
 
         // ラスタスキャン
         for( n = 0 ; n < reference_size ; ++n ){
-            for( j = 0 ; j < loss_SIZE_H ; ++j ){
-                for( i = 0 ; i < loss_SIZE_W ; ++i ){
+            for( j = 0 ; j < loss2_SIZE_H ; ++j ){
+                for( i = 0 ; i < loss2_SIZE_W ; ++i ){
 
-                    // 背景画素スキップ
+                    // 画素スキップ
                     if( input[1][j + reference_y[n]][i + reference_x[n]] == temp[1][reference_y[n]][reference_x[n]] ){
 
                         // 初期化
@@ -301,9 +291,42 @@ Point matching(unsigned char input[CHANNEL][INPUT_SIZE_H][INPUT_SIZE_W], unsigne
                         for( k = 0 ; k < reference_size ; ++k ){
 
                             if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
-                                count++;
+                                ++count ;
 
-                                if( count >= 5 ){
+                                if( count > 3 ){
+                                    out_point.x = i ;
+                                    out_point.y = j ;
+
+                                    return out_point ;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+    else{
+
+        // ラスタスキャン
+        for( n = 0 ; n < reference_size ; ++n ){
+            for( j = 0 ; j < loss3_SIZE_H ; ++j ){
+                for( i = 0 ; i < loss3_SIZE_W ; ++i ){
+
+                    // 画素スキップ
+                    if( input[1][j + reference_y[n]][i + reference_x[n]] == temp[1][reference_y[n]][reference_x[n]] ){
+
+                        // 初期化
+                        count = 0 ;
+
+                        // 選択画素のみ探索
+                        for( k = 0 ; k < reference_size ; ++k ){
+
+                            if( input[1][j + reference_y[k]][i + reference_x[k]] == temp[1][reference_y[k]][reference_x[k]] ){
+                                ++count ;
+
+                                if( count > 3 ){
                                     out_point.x = i ;
                                     out_point.y = j ;
 
